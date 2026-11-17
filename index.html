@@ -481,6 +481,14 @@ footer a{color:var(--mute)}
 <div class="toast" id="simToast"></div>
 <div class="sheet" id="sheet"><span class="x" id="sheetX">✕</span><b id="sheetT"></b><span id="sheetB"></span></div>
 
+<script>
+/* 股票客製助理：自己的存檔區。所有設定（自選股、模擬交易、測驗紀錄、語言、主題…）前面都加 "sc_"，
+   跟原本的「台股新手看盤小幫手」完全分開，互不影響。 */
+(function(){try{var P="sc_",S=Storage.prototype,g=S.getItem,st=S.setItem,r=S.removeItem;
+S.getItem=function(k){return g.call(this,P+k)};
+S.setItem=function(k,v){return st.call(this,P+k,v)};
+S.removeItem=function(k){return r.call(this,P+k)};}catch(e){}})();
+</script>
 <script src="i18n.js"></script>
 <script>
 /* ---------- 共用 ---------- */
