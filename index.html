@@ -41,6 +41,22 @@ body.simple .adv{display:none!important}
 .icon-btn{width:34px;height:34px;border-radius:50%;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:16px;display:grid;place-items:center}
 .icon-btn.lang{font-size:12px;font-weight:900;width:auto;min-width:34px;padding:0 9px;border-radius:999px}
 .icon-btn.spin{animation:spin .8s linear infinite}
+/* 持股圓餅（甜甜圈） */
+.pie{display:flex;gap:16px;align-items:center;margin:4px 0 14px}
+.pie svg{width:150px;height:150px;flex:none;overflow:visible}
+.pie .seg{fill:none;stroke-width:22;cursor:pointer;transition:stroke-width .2s,opacity .2s;stroke-dasharray:0 1000}
+.page.live .pie .seg{animation:pieIn .9s cubic-bezier(.2,.8,.2,1) forwards;animation-delay:calc(var(--k)*80ms)}
+@keyframes pieIn{to{stroke-dasharray:var(--len) 1000}}
+.pie .seg.hot{stroke-width:28}.pie.focus .seg:not(.hot){opacity:.35}
+.pie .ctr1{font-size:11px;fill:var(--mute);text-anchor:middle}
+.pie .ctr2{font-size:17px;font-weight:800;fill:var(--ink);text-anchor:middle}
+.pie .ctr3{font-size:11px;text-anchor:middle;font-weight:700}
+.pleg{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.pleg div{display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;border-radius:8px;padding:2px 4px;transition:background .2s}
+.pleg div.hot{background:var(--line)}
+.pleg i{width:10px;height:10px;border-radius:3px;flex:none}
+.pleg span{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pleg b{font-variant-numeric:tabular-nums}
 @keyframes spin{to{transform:rotate(360deg)}}
 
 /* pager */
@@ -397,6 +413,7 @@ footer a{color:var(--mute)}
     </div>
     <div class="card" style="--i:2">
       <h2>我的持股</h2>
+      <div id="simPie"></div>
       <div id="simPos"></div>
     </div>
     <div class="card" style="--i:3">

@@ -41,8 +41,34 @@ function renderTop(anim){
   } else $("simEqBox").hidden=true;
 }
 
+/* ---------- 持股圓圈（甜甜圈圖） ---------- */
+const PIE_COL=["#3e63dd","#f59f0b","#9b5de5","#00a6a6","#ef6f9a","#7a8b2c","#e4572e","#4ea8de"];
+let pieHot=null;
+function renderPie(){
+  const box=$("simPie");if(!box)return;
+  const codes=Object.keys(S.pos);
+  if(!codes.length){box.innerHTML="";return}
+  let items=codes.map(c=>({c,name:S.pos[c].name,v:S.pos[c].sh*(priceOf(c)||0),pl:S.pos[c].sh*(priceOf(c)||0)-S.pos[c].cost})).sort((a,b)=>b.v-a.v);
+  if(items.length>7){const rest=items.slice(6);items=items.slice(0,6);items.push({c:"_o",name:t("其他","Others"),v:rest.reduce((a,x)=>a+x.v,0),pl:rest.reduce((a,x)=>a+x.pl,0)})}
+  items.forEach((x,i)=>x.col=PIE_COL[i%PIE_COL.length]);
+  items.push({c:"_cash",name:t("現金","Cash"),v:S.cash,col:"var(--line)",cash:true});
+  const tot=items.reduce((a,x)=>a+x.v,0)||1,R=60,C=2*Math.PI*R,gap=items.length>1?2:0;
+  let acc=0;
+  const segs=items.map((x,k)=>{const len=x.v>0?Math.max(1.5,x.v/tot*C-gap):0,off=-acc;acc+=x.v/tot*C;
+    return `<circle class="seg${pieHot===x.c?" hot":""}" data-c="${x.c}" cx="75" cy="75" r="${R}" stroke="${x.col}" style="--len:${len.toFixed(2)};--k:${k}" stroke-dashoffset="${off.toFixed(2)}" transform="rotate(-90 75 75)"/>`}).join("");
+  const h=items.find(x=>x.c===pieHot);
+  const ctr=h?`<text class="ctr1" x="75" y="62">${h.name}</text><text class="ctr2" x="75" y="83">${(h.v/tot*100).toFixed(1)}%</text>`
+      +(h.cash?`<text class="ctr3" x="75" y="100" fill="var(--mute)">${money(h.v)}</text>`:`<text class="ctr3 ${cls(h.pl)}" x="75" y="100" fill="currentColor">${h.pl>=0?"+":""}${money(h.pl)}</text>`)
+    :`<text class="ctr1" x="75" y="66">${t("股票占總資產","Stocks")}</text><text class="ctr2" x="75" y="88">${((tot-S.cash)/tot*100).toFixed(1)}%</text>`;
+  box.innerHTML=`<div class="pie${h?" focus":""}"><svg viewBox="0 0 150 150">${segs}${ctr}</svg>
+    <div class="pleg">${items.map(x=>`<div data-c="${x.c}" class="${pieHot===x.c?"hot":""}"><i style="background:${x.col}"></i><span>${x.name}</span><b>${(x.v/tot*100).toFixed(1)}%</b></div>`).join("")}</div></div>`;
+  box.querySelectorAll("[data-c]").forEach(el=>el.onclick=e=>{e.stopPropagation();pieHot=pieHot===el.dataset.c?null:el.dataset.c;renderPie();
+    box.querySelectorAll(".seg").forEach(s=>{s.style.animation="none";s.style.strokeDasharray=s.style.getPropertyValue("--len")+" 1000"})});
+}
+
 /* ---------- 持股、紀錄 ---------- */
 function renderPos(){
+  renderPie();
   const codes=Object.keys(S.pos);
   if(!codes.length){$("simPos").innerHTML=`<div class="empty">${t("還沒有持股","No holdings yet")}<br><span class="sub">${t("在上面「練習下單」買一檔試試看","Try buying one in \"Practice an order\" above")}</span></div>`;return}
   $("simPos").innerHTML=codes.map((c,i)=>{const p=S.pos[c],px=priceOf(c),mv=p.sh*px,avg=p.cost/p.sh,pl=mv-p.cost,plp=pl/p.cost*100;
