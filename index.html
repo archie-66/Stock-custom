@@ -519,6 +519,7 @@ footer a{color:var(--mute)}
   <div class="setrow"><div class="lab">外觀</div><div class="seg" id="setTheme"><button data-v="auto">跟隨系統</button><button data-v="light">淺色</button><button data-v="dark">深色</button><button data-v="ninja">忍者</button></div></div>
   <div class="setrow"><div class="lab">漲跌顏色</div><div class="seg" id="setColor"><button data-v="tw">台股 <span class="swatch" style="background:var(--red)"></span>漲 <span class="swatch" style="background:var(--green)"></span>跌</button><button data-v="intl">國際 <span class="swatch" style="background:var(--green)"></span>漲 <span class="swatch" style="background:var(--red)"></span>跌</button></div></div>
   <div class="setrow"><div class="lab">顯示內容</div><div class="seg" id="setMode"><button data-v="s">簡易</button><button data-v="a">進階</button></div></div>
+  <div class="setrow"><div class="lab">更新後顯示新功能</div><div class="seg" id="setNews"><button data-v="1">開</button><button data-v="0">關</button></div><button class="btn ghost" id="seeNews" style="margin-top:8px;padding:6px 14px">看最近的更新</button></div>
   <div class="setrow"><div class="lab">不記名答題統計</div><p class="sub" style="margin:0">只會送出題號、對錯和等級，不含名字或帳號，用來改善題目。</p></div>
   <p class="sub" style="margin-top:14px">設定只存在這台裝置上。</p>
 </div>
@@ -947,6 +948,7 @@ document.addEventListener("visibilitychange",()=>{if(document.hidden||!D)return;
 if("serviceWorker" in navigator&&location.hostname.endsWith("github.io")){navigator.serviceWorker.register("sw.js").catch(()=>{})}
 </script>
 <script src="stats.js"></script>
+<script src="news.js"></script>
 <script src="quiz.js"></script>
 <script src="sim.js"></script>
 </body>
