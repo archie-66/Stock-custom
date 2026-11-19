@@ -2,6 +2,10 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19g",date:"11/19",items:[
+    ["⚔️","新外觀：武士","New look: Samurai","冷酷的藍白配色加上鋼鐵深藍底，卡片邊緣會閃過刀刃般的反光。按按鈕會出現一道刀光，點畫面會劃出冰藍刀痕和碎冰，背景飄著冰晶。設定 → 外觀 → 武士。","Cool blue and white on steel navy, with blade-like glints on cards. Buttons flash a cut, taps leave an ice-blue slash and shards, and ice crystals drift in the background. Settings → Appearance → Samurai."],
+    ["🗡️","武士開場動畫","Samurai opening","打開網站時，武士刀會慢慢出鞘，刀身閃過一道反光，最後一刀把整個畫面斬成兩半，再往兩邊滑開。","On launch, a katana slides out of its sheath, the blade gleams, and one slash splits the screen in two."]
+  ]},
   {v:"2026-11-19f",date:"11/19",items:[
     ["🌙","忍者載入動畫：紅月與櫻花","Ninja loader: red moon & sakura","黑色大手裏劍帶殘影高速旋轉，背後是發光的紅色彎月，金色和白色的月牙刀光一直劃過，櫻花花瓣和火星往外飛，三枚小手裏劍繞著轉。讀完時「砰」一聲變成煙霧。","A black shuriken spins with afterimages in front of a glowing red crescent moon, with gold and white crescent slashes, flying sakura petals and embers, and three orbiting shuriken. It vanishes in a puff of smoke."]
   ]},
