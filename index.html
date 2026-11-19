@@ -379,8 +379,6 @@ footer a{color:var(--mute)}
 .ldr .lc::after{content:"";position:absolute;inset:36%;border-radius:50%;background:currentColor;animation:breathe 2.4s ease-in-out infinite}
 @keyframes rip{0%{width:30%;height:30%;opacity:.65}100%{width:100%;height:100%;opacity:0}}
 @keyframes breathe{50%{transform:scale(1.3)}}
-.ldr .lj{display:none;width:72%;height:72%;border-radius:50%;position:relative;background:radial-gradient(circle at 35% 30%,#fff 0 5%,#b9c4ff 12%,#6a4dff 48%,#1a0f55 100%);box-shadow:0 0 24px 6px rgba(106,77,255,.65),0 0 60px 12px rgba(61,123,255,.35);animation:pulse2 1.6s ease-in-out infinite}
-.ldr .lj::before{content:"";position:absolute;inset:-22%;border-radius:50%;background:conic-gradient(from 0deg,transparent 0 50%,#8fa0ff 85%,transparent 100%);-webkit-mask:radial-gradient(circle,transparent 60%,#000 62% 70%,transparent 72%);mask:radial-gradient(circle,transparent 60%,#000 62% 70%,transparent 72%);animation:spin 1.1s linear infinite}
 @keyframes pulse2{50%{transform:scale(1.1)}}
 .ldr::before{display:none;content:"";position:absolute;inset:-6%;border-radius:50%;border:1.5px dashed rgba(159,176,255,.65);animation:spin 7s linear infinite reverse}
 :root[data-theme="ninja"] .ldr .ln{display:block}:root[data-theme="ninja"] .ldr .lc{display:none}
@@ -391,8 +389,6 @@ footer a{color:var(--mute)}
 /* 重新整理時，忍者轉手裏劍、咒術變光圈 */
 :root[data-theme="ninja"] #refresh.ldring svg,:root[data-theme="jjk"] #refresh.ldring svg{opacity:0}
 :root[data-theme="ninja"] #refresh.ldring,:root[data-theme="jjk"] #refresh.ldring{animation:none;position:relative}
-:root[data-theme="ninja"] #refresh.ldring::after{content:"";position:absolute;inset:6px;background:var(--accent);clip-path:polygon(50% 0,62% 38%,100% 50%,62% 62%,50% 100%,38% 62%,0 50%,38% 38%);animation:spin .7s linear infinite}
-:root[data-theme="jjk"] #refresh.ldring::after{content:"";position:absolute;inset:7px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#fff 0 6%,#b9c4ff 14%,#6a4dff 55%,#1a0f55);box-shadow:0 0 14px rgba(106,77,255,.9);animation:pulse2 .8s ease-in-out infinite}
 
 /* ===== 背景光點和點擊特效 ===== */
 #fx{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;display:none}
@@ -442,10 +438,46 @@ footer a{color:var(--mute)}
 :root[data-theme="jjk"] body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;background:radial-gradient(circle at 88% 4%,rgba(124,107,255,.18),transparent 42%);animation:aur 14s ease-in-out infinite alternate}
 @keyframes aur{to{filter:hue-rotate(28deg) brightness(1.25)}}
 @media (prefers-reduced-motion:reduce){:root[data-theme="jjk"] *,:root[data-theme="jjk"] *::before,:root[data-theme="jjk"] *::after,:root[data-theme="ninja"] *,:root[data-theme="ninja"] *::before,:root[data-theme="ninja"] *::after{animation-duration:.01ms!important;animation-iteration-count:1!important}}
+
+/* ===== 紫色能量球（咒術外觀的載入動畫，原創）：電漿核心＋三圈立體能量環＋繞行光點＋閃電＋衝擊波 ===== */
+.ldr .lj{display:none;position:absolute;inset:0;transform-style:preserve-3d;perspective:260px}
+.lj>*{position:absolute;pointer-events:none}
+.lj .au{inset:-30%;border-radius:50%;background:radial-gradient(circle,rgba(167,123,255,.55),rgba(110,60,255,.25) 40%,transparent 70%);filter:blur(6px);animation:aup 1.6s ease-in-out infinite}
+.lj .core{inset:24%;border-radius:50%;background:radial-gradient(circle at 42% 36%,#fff 0 7%,#f1e8ff 14%,#c2a2ff 30%,#8a52ff 52%,#4a1fc4 74%,#170847 100%);
+  box-shadow:0 0 10px 2px #fff6,0 0 22px 6px rgba(170,120,255,.95),0 0 54px 16px rgba(120,70,255,.6),inset 0 0 12px rgba(255,255,255,.7),inset -6px -8px 16px rgba(30,0,90,.7);animation:corep 1.1s ease-in-out infinite}
+.lj .sw,.lj .sw2{inset:24%;border-radius:50%;mix-blend-mode:screen}
+.lj .sw{background:conic-gradient(from 0deg,transparent 0 8%,rgba(255,255,255,.75) 14%,transparent 24%,rgba(214,190,255,.6) 46%,transparent 58%,rgba(255,255,255,.55) 78%,transparent 88%);filter:blur(1.2px);animation:spin 1.25s linear infinite}
+.lj .sw2{inset:28%;background:conic-gradient(from 90deg,transparent,rgba(190,150,255,.8) 20%,transparent 35%,rgba(255,255,255,.6) 60%,transparent 72%);filter:blur(2px);animation:spin .9s linear infinite reverse}
+.lj .rg{inset:4%;border-radius:50%;border:2px solid transparent;border-top-color:#efe6ff;border-left-color:rgba(176,132,255,.75);filter:drop-shadow(0 0 4px #b48cff) drop-shadow(0 0 10px #7b45ff)}
+.lj .r1{animation:or1 1.5s linear infinite}
+.lj .r2{inset:-2%;border-top-color:#cdb4ff;border-left-color:transparent;border-bottom-color:rgba(200,170,255,.7);animation:or2 2.1s linear infinite}
+.lj .r3{inset:10%;border-width:1.5px;border-right-color:#fff;border-top-color:transparent;animation:or3 1.2s linear infinite}
+@keyframes or1{from{transform:rotateX(70deg) rotateZ(0)}to{transform:rotateX(70deg) rotateZ(360deg)}}
+@keyframes or2{from{transform:rotateY(68deg) rotateZ(0)}to{transform:rotateY(68deg) rotateZ(-360deg)}}
+@keyframes or3{from{transform:rotate(45deg) rotateX(72deg) rotateZ(0)}to{transform:rotate(45deg) rotateX(72deg) rotateZ(360deg)}}
+.lj .ob{inset:-8%;border-radius:50%;animation:spin 1.8s linear infinite}
+.lj .ob::before{content:"";position:absolute;left:50%;top:0;width:7%;height:7%;margin-left:-3.5%;border-radius:50%;background:#fff;box-shadow:0 0 4px 1px #fff,0 0 10px 3px #a77bff}
+.lj .o2{inset:2%;animation-duration:1.3s;animation-direction:reverse;transform:rotate(120deg)}
+.lj .o3{inset:-16%;animation-duration:2.6s}.lj .o3::before{width:5%;height:5%;opacity:.8}
+.lj .o4{inset:12%;animation-duration:1s;animation-direction:reverse}.lj .o4::before{width:5%;height:5%}
+.lj .arc{inset:0;width:100%;height:100%;overflow:visible;animation:spin 3s linear infinite}
+.lj .arc path{fill:none;stroke:#f3ecff;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 5px #9d6bff);opacity:0;animation:zap 1.2s steps(1) infinite}
+.lj .arc path:nth-child(2){animation-delay:.3s}.lj .arc path:nth-child(3){animation-delay:.6s}.lj .arc path:nth-child(4){animation-delay:.9s}
+@keyframes zap{0%{opacity:1}12%{opacity:.2}18%{opacity:.9}26%,100%{opacity:0}}
+.lj .sh{inset:22%;border-radius:50%;border:2px solid rgba(200,170,255,.85);box-shadow:0 0 12px rgba(160,110,255,.8);animation:shock 1.6s ease-out infinite}
+.lj .s2{animation-delay:.8s}
+@keyframes shock{0%{transform:scale(1);opacity:.9}100%{transform:scale(2.3);opacity:0}}
+@keyframes corep{50%{transform:scale(1.08);filter:brightness(1.25) saturate(1.2)}}
+@keyframes aup{50%{transform:scale(1.15);opacity:.75}}
+:root[data-theme="jjk"] #splash{background:radial-gradient(circle at 50% 46%,#1c1250,#0a0a15 55%)}
+:root[data-theme="jjk"] #splash .ldr{width:120px;height:120px}
+.ldr.xs{position:absolute;inset:0;margin:auto;width:24px;height:24px}
+.ldr.xs .lj .arc,.ldr.xs .lj .o3,.ldr.xs .lj .sh{display:none}
+:root[data-theme="ninja"] .ldr.xs .ln{animation-duration:.6s}
 </style>
 </head>
 <body class="simple">
-<div id="splash"><div class="ldr"><svg class="ln" viewBox="0 0 24 24"><path d="M12 1l3.1 7.9L23 12l-7.9 3.1L12 23l-3.1-7.9L1 12l7.9-3.1z" fill="currentColor"/><circle cx="12" cy="12" r="2.4" fill="var(--card)"/></svg><div class="lc"><i></i><i></i><i></i></div><div class="lj"></div></div><b>股票客製助理</b></div>
+<div id="splash"><div class="ldr"><svg class="ln" viewBox="0 0 24 24"><path d="M12 1l3.1 7.9L23 12l-7.9 3.1L12 23l-3.1-7.9L1 12l7.9-3.1z" fill="currentColor"/><circle cx="12" cy="12" r="2.4" fill="var(--card)"/></svg><div class="lc"><i></i><i></i><i></i></div><div class="lj"><i class="au"></i><i class="core"></i><i class="sw"></i><i class="sw2"></i><i class="rg r1"></i><i class="rg r2"></i><i class="rg r3"></i><b class="ob o1"></b><b class="ob o2"></b><b class="ob o3"></b><b class="ob o4"></b><svg class="arc" viewBox="0 0 100 100"><path d="M50 14 L46 24 L53 28 L47 38"/><path d="M84 52 L74 49 L71 57 L62 52"/><path d="M22 70 L31 64 L27 57 L37 55"/><path d="M70 22 L64 31 L70 35 L61 41"/></svg><i class="sh"></i><i class="sh s2"></i></div></div><b>股票客製助理</b></div>
 
 <div class="top">
   <h1><span id="pgTitle">大盤</span><span class="pg" id="dateLine">載入中…</span></h1>

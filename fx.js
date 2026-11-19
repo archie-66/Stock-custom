@@ -8,7 +8,7 @@ const fxOn=()=>(style()==="jjk"||style()==="ninja")&&!reduceMo();
 
 /* ---------- 載入動畫（三種外觀各一種） ---------- */
 const SHK='<svg class="ln" viewBox="0 0 24 24"><path d="M12 1l3.1 7.9L23 12l-7.9 3.1L12 23l-3.1-7.9L1 12l7.9-3.1z" fill="currentColor"/><circle cx="12" cy="12" r="2.4" fill="var(--card)"/></svg>';
-window.loaderHTML=(small)=>`<div class="ldr${small?" s":""}">${SHK}<div class="lc"><i></i><i></i><i></i></div><div class="lj"></div></div>`;
+window.loaderHTML=(small)=>`<div class="ldr${small?" s":""}">${SHK}<div class="lc"><i></i><i></i><i></i></div><div class="lj"><i class="au"></i><i class="core"></i><i class="sw"></i><i class="sw2"></i><i class="rg r1"></i><i class="rg r2"></i><i class="rg r3"></i><b class="ob o1"></b><b class="ob o2"></b><b class="ob o3"></b><b class="ob o4"></b><svg class="arc" viewBox="0 0 100 100"><path d="M50 14 L46 24 L53 28 L47 38"/><path d="M84 52 L74 49 L71 57 L62 52"/><path d="M22 70 L31 64 L27 57 L37 55"/><path d="M70 22 L64 31 L70 35 L61 41"/></svg><i class="sh"></i><i class="sh s2"></i></div></div>`;
 
 /* 開場畫面 */
 let sp=document.getElementById("splash");
@@ -19,7 +19,11 @@ setTimeout(hideSplash,2600); // 保險：最多 2.6 秒
 
 /* 重新整理按鈕：轉圈時換成小載入動畫 */
 const rf=document.getElementById("refresh");
-if(rf){new MutationObserver(()=>rf.classList.toggle("ldring",rf.classList.contains("spin"))).observe(rf,{attributes:true,attributeFilter:["class"]})}
+if(rf){new MutationObserver(()=>{const on=rf.classList.contains("spin")&&/^(ninja|jjk)$/.test(style());
+  if(on===rf.classList.contains("ldring"))return;rf.classList.toggle("ldring",on);
+  const old=rf.querySelector(".ldr");if(old)old.remove();
+  if(on){const w=document.createElement("span");w.innerHTML=window.loaderHTML(false);const l=w.firstChild;l.classList.add("xs");rf.appendChild(l)}
+}).observe(rf,{attributes:true,attributeFilter:["class"]})}
 
 /* ---------- 背景光點（canvas） ---------- */
 const fx=document.createElement("canvas");fx.id="fx";document.body.prepend(fx);
