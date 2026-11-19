@@ -2,6 +2,9 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19l",date:"11/19",items:[
+    ["📰","美股：新聞、簡介和簡短分析","US stocks: news, profile & quick analysis","點任何一檔美股，會看到用白話寫的公司簡介、根據最近 60 天股價自動整理的重點（趨勢、跟大盤比、52 週高低位置、波動），還有近三天的新聞標題（中文優先），點標題會打開原始新聞。","Open any US stock for a plain-language profile, auto-generated highlights from 60 days of prices, and the last 3 days of headlines that open the original articles."]
+  ]},
   {v:"2026-11-19k",date:"11/19",items:[
     ["🇺🇸","新分頁：美股","New tab: US stocks","多了「美股」分頁：S&P 500、那斯達克、道瓊、費城半導體四個指數，大約 100 檔熱門美股和 ETF 的漲跌排行、搜尋（可以打中文，例如「輝達」）、自選，還有 Anthropic（ANT）新上市專區。台灣時間每天早上自動更新美股收盤價。","A new US tab: four indexes, about 100 popular US stocks and ETFs with gainers/losers, search, favorites, and an Anthropic (ANT) IPO card. US closes update every Taiwan morning."],
     ["🔮","預測也能分析美股","Predictions for US stocks","預測頁的「個股」可以切換台股或美股，美股會用 S&P 500 當大盤環境來打分數。","The Predict tab can now switch between Taiwan and US stocks; US scores use the S&P 500 as the market backdrop."]

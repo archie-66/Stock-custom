@@ -109,6 +109,8 @@ def news(tk, days=3):
 
     q = (ZH_Q.get(tk) or tk) + " 股價"
     rss("https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": q + " when:3d", "hl": "zh-TW", "gl": "TW", "ceid": "TW:zh-Hant"}), True)
+    if len(out) < 4:  # 再用比較寬的關鍵字找一次
+        rss("https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": (ZH_Q.get(tk) or tk) + " when:3d", "hl": "zh-TW", "gl": "TW", "ceid": "TW:zh-Hant"}), True)
     if len(out) < 4:
         rss(f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={tk}&region=US&lang=en-US", False)
     out.sort(key=lambda x: x["d"], reverse=True)
