@@ -1,0 +1,36 @@
+name: 每日更新美股資料
+
+on:
+  schedule:
+    # 美股收盤後（台北時間早上 5:40、6:40、8:10，週二～六）
+    - cron: "40 21,22 * * 1-5"
+    - cron: "10 0 * * 2-6"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-us
+  cancel-in-progress: false
+
+jobs:
+  us:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 抓美股資料
+        run: python us.py
+      - name: 存檔
+        run: |
+          git config user.name "stock-bot"
+          git config user.email "stock-bot@users.noreply.github.com"
+          if [ -n "$(git status --porcelain us.json)" ]; then
+            git add us.json
+            git commit -q -m "更新美股資料 $(TZ=Asia/Taipei date '+%F %H:%M')"
+            for i in 1 2 3; do git pull -q --rebase origin main && git push -q && break; sleep 5; done
+          fi
