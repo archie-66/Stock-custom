@@ -7,6 +7,9 @@ document.documentElement.lang=EN?"en":"zh-Hant";
 
 /* 畫面上固定文字的英文對照 */
 var STATIC={
+"預測":"Predict","🔮 漲跌預測":"🔮 Up or down?","🌏 大盤":"🌏 Market","🔎 個股":"🔎 Stocks","📒 我的預測紀錄":"📒 My predictions","讀取中…":"Loading…",
+"把投資書上常見的判斷方法（趨勢、動能、RSI、量價、法人籌碼、大盤環境）各打一個分數，加起來估計「接下來 5 個交易日」比較偏漲還是偏跌。":"Common methods from investing books (trend, momentum, RSI, price & volume, institutional flows, overall market) each get a score. Together they estimate whether the next 5 trading days lean up or down.",
+"⚠️ 經濟學裡的「效率市場假說」認為，短期漲跌大部分是隨機的，連專家也常常猜錯。所以這頁每個分數都附上「過去準不準」的檢查。它是練習工具，不是買賣建議。":"⚠️ The efficient-market hypothesis says short-term moves are mostly random, and even experts often guess wrong. So every score here comes with a check of how accurate it has been. This is a practice tool, not trading advice.",
 "大盤":"Market","載入中…":"Loading…","重新整理":"Refresh","設定":"Settings","簡易":"Simple","進階":"Advanced",
 "加權指數":"TAIEX","（大盤）":" (the whole market)","昨天收盤":"Yesterday's close","一週前":"A week ago","最近收盤走勢":"Recent closing trend",
 "一根":"One","K 棒":"candlestick","看懂今天":" explains today","把今天的開盤、最高、最低、收盤畫成一根棒子。":"Today's open, high, low and close drawn as one bar.",

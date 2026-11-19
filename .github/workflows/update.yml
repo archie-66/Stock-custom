@@ -49,3 +49,11 @@ jobs:
             [ "$STATE" = "DONE" ] && break
             sleep 300
           done
+      - name: 更新預測用的歷史資料（每檔最近 60 個交易日）
+        run: |
+          for i in 1 2 3 4 5 6; do python hist.py || true; done
+          if [ -n "$(git status --porcelain hist.json)" ]; then
+            git add hist.json
+            git commit -q -m "更新預測歷史資料 $(TZ=Asia/Taipei date '+%F %H:%M')"
+            git pull -q --rebase origin main && git push -q || echo "push 失敗"
+          fi

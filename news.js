@@ -2,6 +2,10 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19",date:"11/19",items:[
+    ["🔮","新分頁：漲跌預測","New tab: Up or down?","最右邊多了「預測」。它把書上常見的方法（趨勢、動能、RSI、量價、法人）各打分數，估計 5 天後偏漲還是偏跌，也會檢查過去準不準。","A new Predict tab scores common methods (trend, momentum, RSI, volume, institutions) to estimate the next 5 days, and checks how accurate that has been."],
+    ["📒","跟分數比賽","Race the score","你也可以自己猜漲或跌，5 個交易日後自動對答案，看看你和分數誰比較準。","Make your own up/down guess; after 5 trading days it's checked so you can see who's more accurate."]
+  ]},
   {v:"2026-11-18b",date:"11/18",items:[
     ["🔔","更新通知","Update notes","以後網站有新功能，打開時會跳出這張卡片告訴你。不想看可以到設定關掉。","When something new is added, this card pops up once. You can turn it off in Settings."]
   ]},

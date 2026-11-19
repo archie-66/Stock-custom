@@ -25,6 +25,32 @@
 :root[data-theme="dark"]{--bg:#131418;--card:#1d1f25;--ink:#f1f1f4;--mute:#9b9ba5;--line:#2b2e36;--redbg:#3b1a20;--greenbg:#14301f;--accentbg:#1e2547;--warnbg:#3a2d14;--red:#ff5d70;--green:#3fd081;--accent:#8aa2ff;color-scheme:dark}
 @media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="ninja"]){--bg:#131418;--card:#1d1f25;--ink:#f1f1f4;--mute:#9b9ba5;--line:#2b2e36;--redbg:#3b1a20;--greenbg:#14301f;--accentbg:#1e2547;--warnbg:#3a2d14;--red:#ff5d70;--green:#3fd081;--accent:#8aa2ff;color-scheme:dark}}
 :root[data-color="intl"]{--up:var(--green);--upbg:var(--greenbg);--down:var(--red);--downbg:var(--redbg)}
+/* 預測分頁 */
+.pdhead{display:flex;align-items:center;gap:12px;margin:6px 0 8px}
+.pdhead>div:first-child{flex:none;width:150px}
+.pdg{width:150px;display:block}
+.pdn{transform-origin:100px 100px;transform:rotate(0deg);transition:transform 1.2s cubic-bezier(.2,1.4,.4,1)}
+.pdn.go{transform:rotate(var(--a))}
+.pdv{font-size:22px;font-weight:900;line-height:1.3}
+.pdf{display:flex;flex-direction:column;gap:6px}
+.pdf details{border:1px solid var(--line);border-radius:12px;padding:8px 10px;background:var(--bg)}
+.pdf summary{display:flex;align-items:center;gap:8px;list-style:none;cursor:pointer;font-size:14px}
+.pdf summary::-webkit-details-marker{display:none}
+.pdf .ic{font-size:18px}.pdf .nm{flex:1}
+.pdf .sc{font-weight:800;font-variant-numeric:tabular-nums;min-width:26px;text-align:right}
+.pdf p{margin:6px 0 0;font-size:13.5px;line-height:1.6}.pdf p.src{color:var(--mute);font-size:12.5px}
+.tip.pdwarn{background:var(--warnbg)}
+.pdpicks{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.pdpicks button{border:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:13px;padding:5px 10px;border-radius:999px}
+.pdpicks button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.pdprice{display:flex;align-items:baseline;gap:8px;margin:2px 0 6px}.pdprice b{font-size:26px;font-variant-numeric:tabular-nums}
+.pdsp{width:100%;height:90px;display:block}
+.pdmine{margin-top:12px}.pdmine .lab{font-weight:700;font-size:14px;margin-bottom:6px}
+.pdbtn{display:flex;gap:8px}.pdbtn button{flex:1;border:1.5px solid currentColor;background:none;font:inherit;font-weight:800;font-size:16px;padding:10px;border-radius:12px}
+.big2{font-size:26px;font-weight:900}
+.pdrows{margin-top:10px;display:flex;flex-direction:column}
+.pdrows div{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
+.pdrows div b{text-align:right}
 /* ===== 忍者主題（原創：和紙、墨色山、朱紅印章、手裏劍） ===== */
 :root[data-theme="ninja"]{--bg:#e9dfc8;--card:#f8f1e1;--ink:#1d1a17;--mute:#6f6455;--line:#d6c6a2;--accent:#c8361d;--accentbg:#f5dccd;--warnbg:#f1e0b5;--r:6px;color-scheme:light}
 :root[data-theme="ninja"] body{background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 800' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='310' cy='130' r='70' fill='%23c8361d' fill-opacity='.13'/%3E%3Cpath d='M0 640 L70 560 L120 600 L190 500 L250 580 L300 540 L400 620 L400 800 L0 800Z' fill='%231d1a17' fill-opacity='.07'/%3E%3Cpath d='M0 700 L60 650 L140 690 L220 630 L300 680 L360 650 L400 670 L400 800 L0 800Z' fill='%231d1a17' fill-opacity='.10'/%3E%3C/svg%3E") center bottom/cover no-repeat fixed}
@@ -499,6 +525,29 @@ footer a{color:var(--mute)}
       資料來源：<span id="srcs"></span><br>設計參考：投資先生 App 簡易模式、quants.tw。
     </footer>
   </div></section>
+  <section class="page" data-title="預測"><div class="inner">
+    <div class="card" style="--i:0">
+      <h2>🔮 漲跌預測</h2>
+      <p class="hint">把投資書上常見的判斷方法（趨勢、動能、RSI、量價、法人籌碼、大盤環境）各打一個分數，加起來估計「接下來 5 個交易日」比較偏漲還是偏跌。</p>
+      <div class="tip pdwarn">⚠️ 經濟學裡的「效率市場假說」認為，短期漲跌大部分是隨機的，連專家也常常猜錯。所以這頁每個分數都附上「過去準不準」的檢查。它是練習工具，不是買賣建議。</div>
+    </div>
+    <div class="card" style="--i:1">
+      <h2>🌏 大盤</h2>
+      <div id="pdMkt"></div>
+    </div>
+    <div class="card" style="--i:2">
+      <h2>🔎 個股</h2>
+      <input id="pdQ" class="sinput" type="search" placeholder="搜尋股票代號或名稱" autocomplete="off" enterkeyhint="search">
+      <div class="sugs" id="pdSug"></div>
+      <div class="pdpicks" id="pdPicks"></div>
+      <p class="sub" id="pdInfo" style="margin:8px 0 0"></p>
+    </div>
+    <div class="card" style="--i:3" id="pdStock"><p class="hint">讀取中…</p></div>
+    <div class="card" style="--i:4">
+      <h2>📒 我的預測紀錄</h2>
+      <div id="pdLog"></div>
+    </div>
+  </div></section>
 </main>
 
 <nav class="tabs" id="tabs">
@@ -509,6 +558,7 @@ footer a{color:var(--mute)}
   <button><svg viewBox="0 0 24 24"><path d="M7 4v16M17 4v16"/><rect x="4.5" y="8" width="5" height="8" rx="1"/><rect x="14.5" y="6" width="5" height="9" rx="1"/></svg>個股</button>
   <button><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M7 15h4"/></svg>模擬</button>
   <button><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 0 1 2-2h13v16H6a2 2 0 0 0-2 2z"/><path d="M4 19V5"/><path d="M9 7h6"/></svg>學習</button>
+  <button><svg viewBox="0 0 24 24"><circle cx="12" cy="10" r="7"/><path d="M8 21h8"/><path d="M9.5 17.5 8 21M14.5 17.5 16 21"/><path d="M9 8.5a3.5 3.5 0 0 1 3-2"/></svg>預測</button>
 </nav>
 <div class="hintswipe" id="hintswipe">← 左右滑動換頁 →</div>
 <div class="backdrop" id="backdrop"></div>
@@ -631,7 +681,7 @@ function onScroll(){
   const x=pager.scrollLeft/pager.clientWidth;
   ind.style.transform=`translateX(${x*tabW}px)`;
   pages.forEach((p,i)=>{const d=Math.min(1,Math.abs(x-i));p.firstElementChild.style.transform=`scale(${1-d*.07}) translateY(${d*14}px)`;p.firstElementChild.style.opacity=1-d*.45;if(d<.92)wake(i);});
-  const n=Math.round(x); if(n!==cur)activate(n);
+  const n=Math.round(x); if(n!==cur&&pages[n])activate(n);
 }
 function wake(i){if(D&&!pages[i].classList.contains("live")){pages[i].classList.add("live");animatePage(i)}}
 function activate(n){
@@ -802,6 +852,7 @@ function animatePage(n){
   if(n===2)document.querySelectorAll("#inst .fill").forEach(f=>{f.style.width="0";setTimeout(()=>f.style.width=f.dataset.w+"%",300)});
   if(n===3){renderList();renderWatch()}
   if(n===4&&window.simRender)simRender(true);
+  if(n===6&&window.predictRender)predictRender();
 }
 
 /* ---------- 個股列表 ---------- */
@@ -951,5 +1002,6 @@ if("serviceWorker" in navigator&&location.hostname.endsWith("github.io")){naviga
 <script src="news.js"></script>
 <script src="quiz.js"></script>
 <script src="sim.js"></script>
+<script src="predict.js"></script>
 </body>
 </html>
