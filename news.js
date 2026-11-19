@@ -2,6 +2,9 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19f",date:"11/19",items:[
+    ["🌀","忍者載入動畫超炫版","Ninja loading animation, supercharged","發光的大手裏劍帶殘影高速旋轉，外面有毛筆畫出的紅黑墨圈、三枚繞行的小手裏劍、往外噴的火星和交叉的刀光。讀完時「砰」一聲變成煙霧消失。","A glowing shuriken spins with afterimages inside red-and-black brush rings, with three orbiting shuriken, flying embers and crossing slashes. It vanishes in a puff of smoke when loading ends."]
+  ]},
   {v:"2026-11-19e",date:"11/19",items:[
     ["🟣","全新紫色能量球","New violet energy orb","咒術外觀的載入動畫升級了：會變色脈動的電漿核心、旋轉的魔法陣、往中心聚集的光粒、四圈立體能量環、到處亂竄的閃電和一圈圈衝擊波。開場會震動，讀完時白光爆開。重新整理時也有迷你版。","The Mystic loading animation now has a pulsing plasma core, three 3D energy rings, orbiting sparks, flickering lightning and shockwaves, plus a mini version when refreshing."]
   ]},

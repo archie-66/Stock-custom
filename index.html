@@ -507,6 +507,43 @@ footer a{color:var(--mute)}
 @keyframes shake{25%{transform:translate(.6px,-.5px)}50%{transform:translate(-.5px,.6px)}75%{transform:translate(.5px,.4px)}}
 .ldr.xs .lj .mc,.ldr.xs .lj .cv,.ldr.xs .lj .a2,.ldr.xs .lj .r4,.ldr.xs .lj .fl,.ldr.xs .lj .s3{display:none}
 @media (prefers-reduced-motion:reduce){:root[data-theme="jjk"] #splash{animation:none}}
+
+/* ===== 忍者載入動畫超炫版（原創）：墨圈、手裏劍殘影、三枚繞行手裏劍、火星、交叉刀光、煙霧收場 ===== */
+.ldr .nj{display:none;position:absolute;inset:0;pointer-events:none}
+:root[data-theme="ninja"] .ldr .nj{display:block}
+.nj>*{position:absolute}
+.nj .ink{inset:-30%;border-radius:47% 53% 41% 59%/55% 44% 56% 45%;background:radial-gradient(circle at 50% 50%,rgba(224,56,75,.32),rgba(120,10,25,.18) 45%,transparent 70%);filter:blur(4px);animation:inkp 1.4s ease-in-out infinite}
+@keyframes inkp{50%{transform:scale(1.12) rotate(12deg);border-radius:55% 45% 52% 48%/45% 56% 44% 55%}}
+.nj .ens{inset:-26%;width:152%;height:152%;overflow:visible;animation:spin 2.4s linear infinite}
+.nj .ens path{fill:none;stroke-linecap:round}
+.nj .e1{stroke:#e0384b;stroke-width:5;stroke-dasharray:300;stroke-dashoffset:300;filter:drop-shadow(0 0 4px rgba(224,56,75,.8));animation:brush 1.6s ease-in-out infinite}
+.nj .e2{stroke:var(--ink);stroke-width:2.2;opacity:.75;stroke-dasharray:260;stroke-dashoffset:260;animation:brush 1.6s .35s ease-in-out infinite}
+@keyframes brush{0%{stroke-dashoffset:300;opacity:0}15%{opacity:1}60%{stroke-dashoffset:0;opacity:1}100%{stroke-dashoffset:-300;opacity:0}}
+.nj .ghost{inset:0;color:#e0384b;opacity:.35;animation:spin .85s linear infinite}
+.nj .ghost svg,.nj .os svg{width:100%;height:100%;fill:currentColor}
+.nj .g1{animation-delay:-.06s;opacity:.3;filter:blur(1.5px)}.nj .g2{animation-delay:-.12s;opacity:.15;filter:blur(3px)}
+.nj .os{inset:-34%;animation:spin 1.5s linear infinite}
+.nj .os svg{position:absolute;left:50%;top:0;width:20%;height:20%;margin-left:-10%;color:#1d1a17;filter:drop-shadow(0 0 3px rgba(224,56,75,.9));animation:spin .35s linear infinite}
+:root[data-theme="ninja"] .nj .os svg{color:var(--ink)}
+.nj .o2{animation-delay:-.5s}.nj .o3{animation-delay:-1s}
+.nj .os svg circle{fill:#e0384b}
+.nj .em{inset:0;transform:rotate(var(--a))}
+.nj .em::before{content:"";position:absolute;left:50%;top:50%;width:calc(5% * var(--s));height:calc(5% * var(--s));margin:-2.5%;border-radius:50%;background:radial-gradient(#fff,#ffcf6b 40%,#ff5a2b 70%,transparent);box-shadow:0 0 6px #ff6a3d,0 0 12px #e0384b;animation:ember 1s ease-out infinite;animation-delay:var(--d)}
+@keyframes ember{0%{transform:translateY(-40%) scale(1);opacity:0}15%{opacity:1}100%{transform:translateY(-560%) scale(.2);opacity:0}}
+.nj .sx{left:-30%;right:-30%;top:50%;height:4px;margin-top:-2px;border-radius:2px;background:linear-gradient(90deg,transparent,#e0384b 25%,#fff 50%,#e0384b 75%,transparent);box-shadow:0 0 10px #e0384b,0 0 20px rgba(224,56,75,.6);transform:rotate(-35deg) scaleX(0);animation:slx 1.6s ease-out infinite}
+.nj .s2{transform:rotate(35deg) scaleX(0);animation-delay:.12s;--r:35deg}
+.nj .s1{--r:-35deg}
+@keyframes slx{0%,55%{transform:rotate(var(--r)) scaleX(0);opacity:0}65%{transform:rotate(var(--r)) scaleX(1);opacity:1}100%{transform:rotate(var(--r)) scaleX(1.1);opacity:0}}
+.nj .smk{left:50%;top:50%;width:46%;height:46%;margin:-23%;border-radius:50%;background:radial-gradient(circle,rgba(235,230,220,.95),rgba(200,195,185,.7) 50%,transparent 72%);opacity:0}
+:root[data-theme="ninja"] .ldr .ln{color:#e0384b;filter:drop-shadow(0 0 6px rgba(224,56,75,.8)) drop-shadow(0 6px 10px rgba(0,0,0,.25));animation-duration:.6s}
+:root[data-theme="ninja"] #splash .ldr{width:130px;height:130px}
+:root[data-theme="ninja"] #splash b{margin-top:56px}
+:root[data-theme="ninja"] #splash.off .ldr{animation:none}
+:root[data-theme="ninja"] #splash.off .ldr>:not(.nj),:root[data-theme="ninja"] #splash.off .nj>:not(.smk){animation:vanish .25s ease-in forwards}
+@keyframes vanish{to{opacity:0;transform:scale(.4)}}
+:root[data-theme="ninja"] #splash.off .smk{animation:poof .55s ease-out forwards;animation-delay:var(--d)}
+@keyframes poof{0%{opacity:0;transform:translate(0,0) scale(.3)}30%{opacity:1}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(2.4)}}
+.ldr.xs .nj>:not(.ghost){display:none}
 </style>
 </head>
 <body class="simple">
