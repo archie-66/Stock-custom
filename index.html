@@ -200,7 +200,7 @@ body.simple .adv{display:none!important}
 .badge{font-size:12px;font-weight:700;padding:1px 7px;border-radius:6px;display:inline-block;min-width:64px;text-align:center}
 .badge.up{background:var(--upbg)}.badge.down{background:var(--downbg)}.badge.flat{background:var(--line)}
 .detail{overflow:hidden;max-height:0;transition:max-height .35s ease;font-size:13px;line-height:1.6}
-.detail.open{max-height:200px}
+.detail.open{max-height:260px}
 .detail div{background:var(--bg);border-radius:12px;padding:10px 12px;margin:6px 0}
 .mini{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .mini .col div{display:flex;justify-content:space-between;font-size:13px;padding:5px 0;border-bottom:1px dashed var(--line)}
@@ -731,6 +731,7 @@ footer a{color:var(--mute)}
 
 .ush{font-size:15px;margin:16px 0 6px}
 .usinfo{margin:0;font-size:14px;line-height:1.7}
+.twinfo .top2 h3{margin:0;font-size:19px}.twinfo a{color:var(--accent)}
 .ustag{display:inline-block;font-size:11.5px;font-weight:800;color:var(--accent);background:var(--accentbg);border-radius:999px;padding:1px 8px;margin-right:6px;vertical-align:1px}
 .usan{display:flex;flex-direction:column;gap:6px}
 .usan div{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.6}.usan p{margin:0}
@@ -1340,7 +1341,7 @@ function renderList(){
   $("list").innerHTML=rows.map((r,i)=>`<div class="item press" data-c="${r.code}" style="--j:${i}"><div class="rk">${i+1}</div>
     <div><span class="nm">${r.name}</span><span class="cd">${r.code}</span><button class="star ${isW(r.code)?"on":""}" data-star="${r.code}" aria-label="${t("自選","Watchlist")}">${isW(r.code)?"★":"☆"}</button><div class="meta">${sortBy==="vol"?lotsTxt(r.vol):yi(r.amt)}<span class="adv">・${sortBy==="vol"?yi(r.amt):lotsTxt(r.vol)}</span></div></div>
     <div class="rt"><div class="px">${r.px.toLocaleString()}</div><span class="badge ${cls(r.ch)}">${arrow(r.ch)} ${Math.abs(r.pct).toFixed(2)}%</span></div></div>
-    <div class="detail" id="d${r.code}"><div>${stockNote(r)}<div class="acts"><button data-sim="${r.code}">${t("模擬買進","Paper buy")}</button><button data-star="${r.code}">${isW(r.code)?t("移除自選","Remove from watchlist"):t("加入自選","Add to watchlist")}</button></div></div></div>`).join("");
+    <div class="detail" id="d${r.code}"><div>${stockNote(r)}<div class="acts"><button data-info="${r.code}">${t("📰 新聞與分析","📰 News & analysis")}</button><button data-sim="${r.code}">${t("模擬買進","Paper buy")}</button><button data-star="${r.code}">${isW(r.code)?t("移除自選","Remove from watchlist"):t("加入自選","Add to watchlist")}</button></div></div></div>`).join("");
   document.querySelectorAll("#list .item").forEach(el=>el.onclick=()=>$("d"+el.dataset.c).classList.toggle("open"));
 }
 /* ---------- 自選股 ---------- */
@@ -1364,7 +1365,7 @@ function renderWatch(){
     return `<div class="item press" data-w="${c}" style="--j:${i}"><div class="rk"></div>
       <div><span class="nm">${r.name}</span><span class="cd">${c}</span><button class="star on" data-star="${c}">★</button><div class="meta">${held?t(`模擬持有 ${held.toLocaleString()} 股`,`Paper holding: ${held.toLocaleString()} sh`):yi(r.amt)}</div></div>
       <div class="rt"><div class="px">${r.px.toLocaleString()}</div><span class="badge ${cls(r.ch)}">${arrow(r.ch)} ${Math.abs(r.pct).toFixed(2)}%</span></div></div>
-      <div class="detail" id="w${c}"><div>${stockNote(r)}<div class="acts"><button data-sim="${c}">${t("模擬買賣","Paper trade")}</button></div></div></div>`}).join("");
+      <div class="detail" id="w${c}"><div>${stockNote(r)}<div class="acts"><button data-info="${c}">${t("📰 新聞與分析","📰 News & analysis")}</button><button data-sim="${c}">${t("模擬買賣","Paper trade")}</button></div></div></div>`}).join("");
   document.querySelectorAll("#watch .item[data-w]").forEach(el=>el.onclick=()=>$("w"+el.dataset.w).classList.toggle("open"));
 }
 document.addEventListener("click",e=>{
@@ -1448,6 +1449,7 @@ if("serviceWorker" in navigator&&location.hostname.endsWith("github.io")){naviga
 <script src="fx.js"></script>
 <script src="quiz.js"></script>
 <script src="sim.js"></script>
+<script src="twx.js"></script>
 <script src="us_info.js"></script>
 <script src="usx.js"></script>
 <script src="learn.js"></script>

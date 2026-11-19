@@ -2,6 +2,10 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-20",date:"11/20",items:[
+    ["📰","台股也有新聞和分析","News & analysis for Taiwan stocks","在個股清單點開一檔股票，按「📰 新聞與分析」，會看到公司簡介（產業、成立和掛牌年份、董事長）、根據最近 60 天股價自動整理的重點（趨勢、跟其他股票比、高低位置、波動、法人、成交量），還有近三天的新聞標題。","Open a stock in the list and tap 📰 for a company profile, auto-generated highlights and the last 3 days of headlines."],
+    ["🆕","美股加入 Anthropic（ANT）","Anthropic (ANT) added","新上市的 Anthropic 也會出現在美股排行和搜尋裡，第一天的股價和新聞會一起更新。","Newly listed Anthropic now appears in US rankings and search, with its first prices and news."]
+  ]},
   {v:"2026-11-19l",date:"11/19",items:[
     ["📰","美股：新聞、簡介和簡短分析","US stocks: news, profile & quick analysis","點任何一檔美股，會看到用白話寫的公司簡介、根據最近 60 天股價自動整理的重點（趨勢、跟大盤比、52 週高低位置、波動），還有近三天的新聞標題（中文優先），點標題會打開原始新聞。","Open any US stock for a plain-language profile, auto-generated highlights from 60 days of prices, and the last 3 days of headlines that open the original articles."]
   ]},
