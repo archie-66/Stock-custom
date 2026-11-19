@@ -3,7 +3,7 @@
 (function(){
 var NEWS=[
   {v:"2026-11-19e",date:"11/19",items:[
-    ["🟣","全新紫色能量球","New violet energy orb","咒術外觀的載入動畫升級了：會脈動的電漿核心、三圈立體能量環、繞行的光點、閃爍的閃電和一圈圈的衝擊波。重新整理時也有迷你版。","The Mystic loading animation now has a pulsing plasma core, three 3D energy rings, orbiting sparks, flickering lightning and shockwaves, plus a mini version when refreshing."]
+    ["🟣","全新紫色能量球","New violet energy orb","咒術外觀的載入動畫升級了：會變色脈動的電漿核心、旋轉的魔法陣、往中心聚集的光粒、四圈立體能量環、到處亂竄的閃電和一圈圈衝擊波。開場會震動，讀完時白光爆開。重新整理時也有迷你版。","The Mystic loading animation now has a pulsing plasma core, three 3D energy rings, orbiting sparks, flickering lightning and shockwaves, plus a mini version when refreshing."]
   ]},
   {v:"2026-11-19d",date:"11/19",items:[
     ["✨","按鍵特效和載入動畫","Button effects & loading animation","跟行事曆一樣：忍者外觀有紅色光點、偶爾飛過的手裏劍，點擊會出現刀光；咒術外觀有紫藍光點和光痕，點擊會出現光環。按鈕按下去會縮、會亮，主要按鈕有光掃過。打開網站和重新整理時也有載入動畫。","Same as the calendar: Ninja has red sparks, a passing shuriken and slash taps; Mystic has violet sparks, light streaks and ring taps. Buttons press, glow and shine, and there's a loading animation on launch and refresh."]
