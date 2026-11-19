@@ -163,9 +163,33 @@ function gauge(score,cl){
     <text x="22" y="114" font-size="11" fill="var(--mute)">${tt("偏跌","Down")}</text><text x="178" y="114" font-size="11" fill="var(--mute)" text-anchor="end">${tt("偏漲","Up")}</text>
   </svg>`;
 }
+const TAG={trend:[["趨勢向上","Uptrend"],["趨勢向下","Downtrend"]],cross:[["短線轉強","Short-term turning up"],["短線轉弱","Short-term turning down"]],
+  mom:[["最近很強","Strong lately"],["最近很弱","Weak lately"]],rs:[["比別人強","Beating others"],["比別人弱","Lagging others"]],
+  rsi:[["跌深可能反彈","Oversold, may bounce"],["漲多可能休息","Overheated, may pause"]],vol:[["大量上漲","Rising on volume"],["大量下跌","Falling on volume"]],
+  inst:[["法人在買","Institutions buying"],["法人在賣","Institutions selling"]],mkt:[["大盤偏多","Market positive"],["大盤偏空","Market negative"]],
+  t:[["指數趨勢向上","Index uptrend"],["指數趨勢向下","Index downtrend"]],r5:[["近 5 天上漲","Up over 5 days"],["近 5 天下跌","Down over 5 days"]],
+  b:[["多數股票上漲","Most stocks up"],["多數股票下跌","Most stocks down"]],i:[["外資買超","Foreign buying"],["外資賣超","Foreign selling"]]};
+const LK={trend:"trend",cross:"cross",mom:"mom",rs:"rs",rsi:"rsi",vol:"vol",inst:"inst",mkt:"mkt",t:"trend",r5:"mom",b:"rs",i:"inst"};
+const tag=x=>{const g=TAG[x.k];if(!g||!x.s)return "";const z=g[x.s>0?0:1];return tt(z[0],z[1])};
+function bar(s){const w=Math.min(1,Math.abs(s)/2)*50;return `<span class="pdbar"><i class="${s>0?"up":"down"}" style="${s>0?"left:50%":"right:50%"};width:${w}%"></i></span>`}
 function factorList(F){
-  return `<div class="pdf">${F.map(x=>`<details><summary><span class="ic">${x.ic}</span><span class="nm">${x.name}</span><span class="sc ${x.s>0?"up":x.s<0?"down":"flat"}">${x.s>0?"+":""}${x.s}</span></summary>
-    <p>${x.txt}</p><p class="src">📚 ${x.src}</p></details>`).join("")}</div>`;
+  return `<div class="pdf">${F.map(x=>`<details><summary><span class="ic">${x.ic}</span><span class="nm">${x.name}${x.s?`<em class="${x.s>0?"up":"down"}">${tag(x)}</em>`:`<em class="flat">${tt("中性","Neutral")}</em>`}</span>${bar(x.s)}<span class="sc ${x.s>0?"up":x.s<0?"down":"flat"}">${x.s>0?"+":""}${x.s}</span></summary>
+    <p>${x.txt}</p><p class="src">📚 ${x.src}</p>${LK[x.k]&&window.openLesson?`<button class="pdlearn" data-l="${LK[x.k]}">${window.lessonDone&&lessonDone(LK[x.k])?"✅ ":"📖 "}${tt("1 分鐘學會這個方法","Learn this in 1 minute")}</button>`:""}</details>`).join("")}</div>`;
+}
+function summary(V,F,conf){
+  const pros=F.filter(x=>x.s>0).sort((a,b)=>b.s-a.s).slice(0,3),cons=F.filter(x=>x.s<0).sort((a,b)=>a.s-b.s).slice(0,3);
+  const arrow=V.cl==="up"?"▲":V.cl==="down"?"▼":"◆";
+  const cw=[tt("很低","Very low"),tt("低","Low"),tt("中","Medium"),tt("較高","Higher")][conf];
+  return `<div class="pdsum ${V.cl}"><div class="pdbig"><span class="ar">${arrow}</span><div><div class="w">${V.word}</div>
+      <div class="pdcf">${tt("把握度","Confidence")} <span class="dots">${[1,2,3].map(i=>`<i class="${i<=conf?"on":""}"></i>`).join("")}</span> ${cw}</div></div></div>
+    <div class="pdwhy">${pros.length?`<div><b>👍 ${tt("支持上漲","For up")}</b>${pros.map(x=>`<span class="up">${tag(x)}</span>`).join("")}</div>`:""}
+    ${cons.length?`<div><b>👎 ${tt("支持下跌","For down")}</b>${cons.map(x=>`<span class="down">${tag(x)}</span>`).join("")}</div>`:""}</div></div>`;
+}
+function confOf(V,B){
+  let c=Math.abs(V.score)>=40?2:Math.abs(V.score)>=15?1:0;
+  if(B&&B.n>=5){const r=B.hit/B.n;if(r>B.base+0.05)c++;else if(r<B.base)c--}
+  if(V.agree<0.6)c--;
+  return clamp(c,0,3);
 }
 function spark(S){
   const N=S.c.length;if(N<2)return "";
@@ -179,7 +203,7 @@ function spark(S){
 
 function renderMarket(){
   const M=market();
-  $("pdMkt").innerHTML=`<div class="pdhead"><div>${gauge(M.score,M.cl)}</div><div><div class="sub">${tt("大盤接下來幾天","Market, next few days")}</div><div class="pdv ${M.cl}">${M.word}</div><div class="sub">${tt("分數","Score")} ${M.score>0?"+":""}${M.score}／100</div></div></div>${factorList(M.F)}`;
+  $("pdMkt").innerHTML=`<div class="sub">${tt("大盤接下來幾天","Market, next few days")}</div>${summary(M,M.F,confOf(M,null))}<div class="pdhead"><div>${gauge(M.score,M.cl)}</div><div><div class="sub">${tt("分數","Score")} <b class="${M.cl}">${M.score>0?"+":""}${M.score}</b>／100</div><div class="sub">${tt("指針越往右越偏漲","Further right = more up")}</div></div></div>${factorList(M.F)}`;
   setTimeout(()=>$("pdMkt").querySelectorAll(".pdn").forEach(n=>n.classList.add("go")),60);
 }
 function pickList(){
@@ -209,11 +233,12 @@ function renderStock(){
   box.innerHTML=`<h2>${esc(S.n)} <span class="sub">${code}${S.m==="o"?tt(" · 上櫃"," · OTC"):""}</span></h2>
     <div class="pdprice"><b>${fmt(S.c[t])}</b> <span class="${chg>0?"up":chg<0?"down":"flat"}">${pct(chg)}</span> <span class="sub">${S.d[t].slice(5).replace("-","/")} ${tt("收盤","close")}</span></div>
     ${spark(S)}
-    <div class="pdhead"><div>${gauge(V.score,V.cl)}</div><div><div class="sub">${tt("接下來 5 個交易日","Next 5 trading days")}</div><div class="pdv ${V.cl}">${V.word}</div>
-      <div class="sub">${tt("分數","Score")} ${V.score>0?"+":""}${V.score}／100 · ${tt(`${F.length} 個方法裡有 ${Math.round(V.agree*F.length)} 個同方向`,`${Math.round(V.agree*F.length)} of ${F.length} methods agree`)}</div></div></div>
+    <div class="sub" style="margin-top:8px">${tt("接下來 5 個交易日","Next 5 trading days")}</div>${summary(V,F,confOf(V,B))}
+    <div class="pdhead"><div>${gauge(V.score,V.cl)}</div><div>
+      <div class="sub">${tt("分數","Score")} <b class="${V.cl}">${V.score>0?"+":""}${V.score}</b>／100<br>${tt(`${F.length} 個方法裡有 ${Math.round(V.agree*F.length)} 個同方向`,`${Math.round(V.agree*F.length)} of ${F.length} methods agree`)}</div></div></div>
     <p class="hint">${tt("點每一項可以看說明和根據。","Tap each item for the reason and where it comes from.")}</p>
     ${factorList(F)}
-    <div class="tip ${good?"":"pdwarn"}">🔍 <b>${tt("準不準？","How accurate?")}</b> ${bt} ${B.n>=5?(good?tt("這檔目前比亂猜好一點，但樣本很少，參考就好。","For this stock it has done a bit better than guessing, but the sample is small."):tt("這檔目前沒有比亂猜好，請不要只看這個分數。","For this stock it hasn't beaten guessing, so don't rely on this score.")):""}</div>
+    <div class="tip ${good?"":"pdwarn"}">🔍 <b>${tt("準不準？","How accurate?")}</b> ${bt} <button class="pdlearn" data-l="base">📖 ${tt("什麼是基準率？","What's a base rate?")}</button> ${B.n>=5?(good?tt("這檔目前比亂猜好一點，但樣本很少，參考就好。","For this stock it has done a bit better than guessing, but the sample is small."):tt("這檔目前沒有比亂猜好，請不要只看這個分數。","For this stock it hasn't beaten guessing, so don't rely on this score.")):""}</div>
     <div class="pdmine"><div class="lab">${tt("換你猜：5 個交易日後會比現在","Your turn: in 5 trading days it will be")}</div>
       ${open?`<p class="sub">${tt(`你在 ${open.d.slice(5).replace("-","/")} 猜「${open.me>0?"漲":"跌"}」（當時 ${fmt(open.px)}），等 5 個交易日後自動對答案。`,`On ${open.d.slice(5)} you guessed ${open.me>0?"up":"down"} at ${fmt(open.px)}. It'll be checked automatically after 5 trading days.`)}</p>`
         :`<div class="pdbtn"><button data-g="1" class="up">${tt("📈 漲","📈 Up")}</button><button data-g="-1" class="down">${tt("📉 跌","📉 Down")}</button></div>`}
@@ -239,17 +264,57 @@ function search(q){
 }
 async function ensure(){
   if(H||loading)return;loading=true;
-  try{const r=await fetch("hist.json?t="+Date.now(),{cache:"no-store"});H=await r.json();medCache={}}catch(e){H=null}
+  try{const r=await fetch("hist.json?t="+Date.now(),{cache:"no-store"});H=await r.json();medCache={};rankCache=null}catch(e){H=null}
   loading=false;
   if(!H||!H.dates||!H.dates.length){$("pdStock").innerHTML=`<p class="hint">${tt("歷史資料還在準備中（第一次大約需要一個下午）。先看看大盤的部分吧。","History is still being collected (the first time takes about an afternoon). Check the market section for now.")}</p>`;return}
   $("pdInfo").textContent=tt(`歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔股票 · 更新 ${H.updatedAt||""}`,`History: ${H.dates.length} trading days, ${Object.keys(H.s).length} stocks · updated ${H.updatedAt||""}`);
   if(!code){const L=pickList();code=L.length?L[0][0]:null}
-  renderPicks();renderStock();renderLog();
+  renderPicks();renderStock();renderLog();renderRank();
+}
+document.addEventListener("click",e=>{const b=e.target.closest(".pdlearn,.pdtile");if(!b)return;e.preventDefault();window.openLesson&&openLesson(b.dataset.l)});
+/* 小教室示範：用目前選的股票真的數字 */
+window.predictDemo=function(k){
+  if(!H||!code||!H.s[code])return "";const S=series(code),t=S.c.length-1;if(t<21)return "";
+  const nm=`<b style="display:inline;color:var(--ink);font-size:inherit">${esc(S.n)}</b>`;
+  if(k==="trend"){const m=ma(S.c,t,20),m2=ma(S.c,t-5,20);return tt(`${nm} 收 ${fmt(S.c[t])}，20 日均線 ${fmt(m)}，5 天前的均線是 ${fmt(m2)}。價格在均線${S.c[t]>m?"上面":"下面"}、均線${m>m2?"往上":"往下"}。`,`${nm} closed at ${fmt(S.c[t])}; 20-day average ${fmt(m)} (was ${fmt(m2)} five days ago).`)}
+  if(k==="cross")return tt(`${nm} 的 5 日均線 ${fmt(ma(S.c,t,5))}，20 日均線 ${fmt(ma(S.c,t,20))}。`,`${nm}: 5-day average ${fmt(ma(S.c,t,5))}, 20-day ${fmt(ma(S.c,t,20))}.`);
+  if(k==="mom"){const r=(S.c[t]/S.c[t-20]-1)*100;return tt(`${nm} 20 天前是 ${fmt(S.c[t-20])}，現在 ${fmt(S.c[t])}，${r>=0?"漲":"跌"}了 ${fmt(Math.abs(r),1)}%。`,`${nm} went from ${fmt(S.c[t-20])} to ${fmt(S.c[t])} in 20 days (${pct(r)}).`)}
+  if(k==="rs"){const r=(S.c[t]/S.c[t-20]-1)*100,md=median20(H.dates.indexOf(S.d[t]))*100;return tt(`${nm} 20 天 ${pct(r)}，所有股票的中間值是 ${pct(md)}。`,`${nm}: ${pct(r)} over 20 days vs a median of ${pct(md)}.`)}
+  if(k==="rsi")return tt(`${nm} 現在的 RSI 是 ${fmt(rsi(S.c,t),0)}。`,`${nm}'s RSI is ${fmt(rsi(S.c,t),0)} now.`);
+  if(k==="vol"){const va=avg(S.v.slice(t-20,t));return tt(`${nm} 今天成交 ${S.v[t].toLocaleString()} 張，前 20 天平均 ${Math.round(va).toLocaleString()} 張（${fmt(S.v[t]/va,1)} 倍）。`,`${nm} traded ${S.v[t].toLocaleString()} lots vs a ${Math.round(va).toLocaleString()} average (${fmt(S.v[t]/va,1)}×).`)}
+  if(k==="inst"){if(!S.hasF)return tt("上櫃股票目前沒有個股法人資料。","No per-stock institutional data for OTC stocks yet.");const f5=S.f.slice(t-4,t+1).map(x=>x||0);return tt(`${nm} 近 5 天外資＋投信：${f5.map(x=>(x>0?"+":"")+x.toLocaleString()).join("、")} 張。`,`${nm}, last 5 days (lots): ${f5.map(x=>(x>0?"+":"")+x.toLocaleString()).join(", ")}.`)}
+  if(k==="base"){const B=backtest(S);return B.n?tt(`${nm}：分數給了 ${B.n} 次方向，對 ${B.hit} 次；每次都猜比較常發生的那邊會對 ${fmt(B.base*100,0)}%。`,`${nm}: ${B.hit}/${B.n} right; base rate ${fmt(B.base*100,0)}%.`):""}
+  return "";
+};
+function renderLearn(){
+  const L=window.LESSONS||[];if(!$("pdLearn"))return;const n=window.lessonCount?lessonCount():0;
+  $("pdLearn").innerHTML=`<div class="pdprog"><i style="width:${L.length?n/L.length*100:0}%"></i></div><p class="sub" style="margin:6px 0 10px">${tt(`已學會 ${n}／${L.length} 個（答對小測驗才算）`,`${n}/${L.length} learned (pass the quiz to count)`)}</p>
+    <div class="pdtiles">${L.map(x=>`<button class="pdtile ${lessonDone(x.k)?"done":""}" data-l="${x.k}"><span class="ic">${x.ic}</span><span>${tt(x.name[0],x.name[1])}</span>${lessonDone(x.k)?"<i>✅</i>":""}</button>`).join("")}</div>`;
+}
+window.learnChanged=()=>{renderLearn();if(H&&code)renderStock();renderMarket()};
+/* 訊號排行：所有收錄股票一起算 */
+let rankCache=null;
+function renderRank(){
+  if(!H||!$("pdRank"))return;
+  if(!rankCache){
+    const last=H.dates[H.dates.length-1],all=[];
+    for(const c in H.s){const S=series(c);if(!S||S.c.length<22||S.d[S.d.length-1]!==last)continue;
+      const t=S.c.length-1,va=avg(S.v.slice(t-19,t+1));if(va<1000)continue;
+      const V=verdict(factors(S,t,false));all.push({c,n:S.n,sc:V.score,cl:V.cl})}
+    all.sort((a,b)=>b.sc-a.sc);rankCache={up:all.filter(x=>x.sc>=15).slice(0,5),dn:all.filter(x=>x.sc<=-15).slice(-5).reverse(),n:all.length,
+      upN:all.filter(x=>x.sc>=15).length,dnN:all.filter(x=>x.sc<=-15).length};
+  }
+  const R=rankCache,mid=R.n-R.upN-R.dnN,row=x=>`<button data-c="${x.c}"><span>${esc(x.n)} <span class="sub">${x.c}</span></span>${bar(x.sc/50)}<b class="${x.cl}">${x.sc>0?"+":""}${x.sc}</b></button>`;
+  $("pdRank").innerHTML=`<div class="pdratio"><span class="upbg" style="flex:${R.upN||0.01}">▲ ${R.upN}</span><span class="midbg" style="flex:${mid||0.01}">◆ ${mid}</span><span class="dnbg" style="flex:${R.dnN||0.01}">▼ ${R.dnN}</span></div>
+    <p class="sub" style="margin:6px 0 10px">${tt(`成交量夠大的 ${R.n} 檔裡：${R.upN} 檔偏漲、${mid} 檔看不出來、${R.dnN} 檔偏跌（不含大盤分數）。點一檔可以看詳細。`,`Of ${R.n} liquid stocks: ${R.upN} lean up, ${mid} unclear, ${R.dnN} lean down (market factor excluded). Tap one for details.`)}</p>
+    <div class="pdrk"><div><b class="up">▲ ${tt("分數最高","Highest")}</b>${R.up.map(row).join("")||`<p class="sub">—</p>`}</div><div><b class="down">▼ ${tt("分數最低","Lowest")}</b>${R.dn.map(row).join("")||`<p class="sub">—</p>`}</div></div>`;
+  $("pdRank").querySelectorAll("button[data-c]").forEach(b=>b.onclick=()=>choose(b.dataset.c));
 }
 window.predictRender=function(){
+  renderLearn();
   if(!$("pdMkt"))return;
   renderMarket();
-  if(H){renderPicks();renderStock();renderLog()}else ensure();
+  if(H){renderPicks();renderStock();renderLog();renderRank()}else ensure();
 };
 window.predictReload=function(){H=null;window.predictRender()};
 const q=$("pdQ");if(q)q.addEventListener("input",()=>search(q.value));

@@ -51,6 +51,34 @@
 .pdrows{margin-top:10px;display:flex;flex-direction:column}
 .pdrows div{display:grid;grid-template-columns:1fr auto;gap:2px 8px;padding:8px 0;border-top:1px solid var(--line);font-size:13px}
 .pdrows div b{text-align:right}
+.pdsum{border-radius:16px;padding:12px 14px;margin:6px 0 8px;border:1.5px solid currentColor}
+.pdsum.up{background:var(--upbg);color:var(--up)}.pdsum.down{background:var(--downbg);color:var(--down)}.pdsum.flat{background:var(--line);color:var(--mute)}
+.pdbig{display:flex;align-items:center;gap:12px}.pdbig .ar{font-size:34px;line-height:1}
+.pdbig .w{font-size:22px;font-weight:900;line-height:1.25}
+.pdbig .pdcf{font-size:12.5px;color:var(--ink);opacity:.8;display:flex;align-items:center;gap:5px;margin-top:2px}
+.dots{display:inline-flex;gap:3px}.dots i{width:9px;height:9px;border-radius:50%;border:1.5px solid currentColor;opacity:.5}.dots i.on{background:currentColor;opacity:1}
+.pdwhy{margin-top:8px;display:flex;flex-direction:column;gap:5px}
+.pdwhy div{display:flex;flex-wrap:wrap;align-items:center;gap:5px;font-size:12.5px;color:var(--ink)}
+.pdwhy b{font-size:12.5px;margin-right:2px}
+.pdwhy span{background:var(--card);border-radius:999px;padding:2px 9px;font-weight:700}
+.pdf .nm em{display:block;font-style:normal;font-size:12px;font-weight:700}
+.pdbar{position:relative;width:64px;height:8px;border-radius:4px;background:var(--line);flex:none}
+.pdbar::after{content:"";position:absolute;left:50%;top:-2px;bottom:-2px;width:1.5px;background:var(--mute)}
+.pdbar i{position:absolute;top:0;bottom:0;border-radius:4px;background:currentColor}
+.pdlearn{margin-top:8px;border:1px dashed var(--accent);background:none;color:var(--accent);font:inherit;font-size:13px;font-weight:700;padding:6px 12px;border-radius:999px}
+.tip .pdlearn{margin:6px 0 0;display:inline-block}
+.pdratio{display:flex;height:26px;border-radius:8px;overflow:hidden;font-size:12px;font-weight:800;color:#fff}
+.pdratio span{display:flex;align-items:center;justify-content:center;min-width:34px;white-space:nowrap}
+.pdratio .upbg{background:var(--up)}.pdratio .dnbg{background:var(--down)}.pdratio .midbg{background:var(--flat)}
+.pdrk{display:grid;grid-template-columns:1fr;gap:10px}
+.pdrk>div>b{display:block;font-size:13px;margin-bottom:4px}
+.pdrk button{display:flex;align-items:center;gap:8px;width:100%;border:0;border-top:1px solid var(--line);background:none;color:var(--ink);font:inherit;font-size:14px;padding:8px 2px;text-align:left}
+.pdrk button>span:first-child{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pdrk button b{min-width:34px;text-align:right;font-variant-numeric:tabular-nums}
+.pdprog{height:8px;border-radius:4px;background:var(--line);overflow:hidden}.pdprog i{display:block;height:100%;background:var(--accent);border-radius:4px;transition:width .6s}
+.pdtiles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.pdtile{position:relative;display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:13.5px;font-weight:700;padding:10px;border-radius:12px;text-align:left;line-height:1.3}
+.pdtile .ic{font-size:20px}.pdtile.done{border-color:var(--green)}.pdtile i{position:absolute;right:6px;top:4px;font-style:normal;font-size:12px}
 /* ===== 忍者主題（原創：和紙、墨色山、朱紅印章、手裏劍） ===== */
 :root[data-theme="ninja"]{--bg:#e9dfc8;--card:#f8f1e1;--ink:#1d1a17;--mute:#6f6455;--line:#d6c6a2;--accent:#c8361d;--accentbg:#f5dccd;--warnbg:#f1e0b5;--r:6px;color-scheme:light}
 :root[data-theme="ninja"] body{background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 800' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='310' cy='130' r='70' fill='%23c8361d' fill-opacity='.13'/%3E%3Cpath d='M0 640 L70 560 L120 600 L190 500 L250 580 L300 540 L400 620 L400 800 L0 800Z' fill='%231d1a17' fill-opacity='.07'/%3E%3Cpath d='M0 700 L60 650 L140 690 L220 630 L300 680 L360 650 L400 670 L400 800 L0 800Z' fill='%231d1a17' fill-opacity='.10'/%3E%3C/svg%3E") center bottom/cover no-repeat fixed}
@@ -536,6 +564,10 @@ footer a{color:var(--mute)}
       <div id="pdMkt"></div>
     </div>
     <div class="card" style="--i:2">
+      <h2>🚦 今天的訊號總覽</h2>
+      <div id="pdRank"><p class="hint">讀取中…</p></div>
+    </div>
+    <div class="card" style="--i:2">
       <h2>🔎 個股</h2>
       <input id="pdQ" class="sinput" type="search" placeholder="搜尋股票代號或名稱" autocomplete="off" enterkeyhint="search">
       <div class="sugs" id="pdSug"></div>
@@ -544,6 +576,11 @@ footer a{color:var(--mute)}
     </div>
     <div class="card" style="--i:3" id="pdStock"><p class="hint">讀取中…</p></div>
     <div class="card" style="--i:4">
+      <h2>📚 理論小教室</h2>
+      <p class="hint">預測用到的每個經濟學和投資理論，都可以用 1 分鐘學會：一句話 → 用真的股票示範 → 常見誤會 → 小測驗。</p>
+      <div id="pdLearn"></div>
+    </div>
+    <div class="card" style="--i:5">
       <h2>📒 我的預測紀錄</h2>
       <div id="pdLog"></div>
     </div>
@@ -1002,6 +1039,7 @@ if("serviceWorker" in navigator&&location.hostname.endsWith("github.io")){naviga
 <script src="news.js"></script>
 <script src="quiz.js"></script>
 <script src="sim.js"></script>
+<script src="learn.js"></script>
 <script src="predict.js"></script>
 </body>
 </html>

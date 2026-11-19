@@ -2,6 +2,10 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19b",date:"11/19",items:[
+    ["🚦","預測看得更清楚","Clearer predictions","每檔股票最上面直接寫「偏漲／偏跌」、把握度，以及支持和反對的理由。還多了一個總覽，看哪些股票分數最高、最低。","Each stock now opens with a clear up/down call, a confidence level, and reasons for and against, plus an overview of the highest and lowest scores."],
+    ["📚","理論小教室","Theory class","10 個經濟學和投資理論，每個 1 分鐘：一句話、用真的股票示範、常見誤會、小測驗，答對才算學會。","10 economics and investing ideas, one minute each: one line, a real-stock example, a common mistake, and a quiz."]
+  ]},
   {v:"2026-11-19",date:"11/19",items:[
     ["🔮","新分頁：漲跌預測","New tab: Up or down?","最右邊多了「預測」。它把書上常見的方法（趨勢、動能、RSI、量價、法人）各打分數，估計 5 天後偏漲還是偏跌，也會檢查過去準不準。","A new Predict tab scores common methods (trend, momentum, RSI, volume, institutions) to estimate the next 5 days, and checks how accurate that has been."],
     ["📒","跟分數比賽","Race the score","你也可以自己猜漲或跌，5 個交易日後自動對答案，看看你和分數誰比較準。","Make your own up/down guess; after 5 trading days it's checked so you can see who's more accurate."]
