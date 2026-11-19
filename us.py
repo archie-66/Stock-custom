@@ -46,7 +46,27 @@ def yahoo(sym):
                 continue
             d = datetime.fromtimestamp(s, timezone(timedelta(hours=-5))).strftime("%Y-%m-%d")
             rows.append((d, round(c, 2), int(q["volume"][i] or 0)))
+        # 剛上市的股票，日線有時還沒有資料：改用「最新成交價」補當天
+        if not rows and mt.get("regularMarketPrice") and mt.get("regularMarketTime"):
+            d = datetime.fromtimestamp(mt["regularMarketTime"], timezone(timedelta(hours=-5))).strftime("%Y-%m-%d")
+            rows.append((d, round(mt["regularMarketPrice"], 2), int(mt.get("regularMarketVolume") or 0)))
         return name, rows
+    except Exception:
+        return None, []
+
+
+def yahoo_short(sym):
+    """新股用：只抓最近 5 天，比較容易有資料"""
+    t = fetch(f"https://query2.finance.yahoo.com/v8/finance/chart/{sym}?range=5d&interval=1d")
+    try:
+        r = json.loads(t)["chart"]["result"][0]; mt = r["meta"]
+        ts, q = r.get("timestamp") or [], r["indicators"]["quote"][0]
+        rows = [(datetime.fromtimestamp(s, timezone(timedelta(hours=-5))).strftime("%Y-%m-%d"), round(q["close"][i], 2), int(q["volume"][i] or 0))
+                for i, s in enumerate(ts) if q["close"][i] is not None]
+        if not rows and mt.get("regularMarketPrice") and mt.get("regularMarketTime"):
+            rows = [(datetime.fromtimestamp(mt["regularMarketTime"], timezone(timedelta(hours=-5))).strftime("%Y-%m-%d"), round(mt["regularMarketPrice"], 2), int(mt.get("regularMarketVolume") or 0))]
+        META.setdefault(sym, {"ln": mt.get("longName") or sym, "hi": mt.get("fiftyTwoWeekHigh"), "lo": mt.get("fiftyTwoWeekLow"), "ex": mt.get("fullExchangeName")})
+        return mt.get("shortName") or mt.get("longName"), rows
     except Exception:
         return None, []
 
@@ -65,7 +85,10 @@ def stooq(sym):
 
 def get(ysym, ssym):
     name, rows = yahoo(ysym)
-    if len(rows) < 2:
+    if not rows:
+        name2, rows = yahoo_short(ysym)
+        name = name or name2
+    if not rows:
         rows = stooq(ssym)
     return name, rows
 
@@ -75,6 +98,33 @@ ZH_Q = {"ANT": "Anthropic", "SPCX": "SpaceX", "AAPL": "蘋果 Apple", "MSFT": "�
         "SMCI": "美超微", "ORCL": "甲骨文", "NFLX": "Netflix", "PLTR": "Palantir", "BRK-B": "波克夏", "WMT": "沃爾瑪", "COST": "好市多", "KO": "可口可樂", "MCD": "麥當勞",
         "DIS": "迪士尼", "SBUX": "星巴克", "PFE": "輝瑞", "LLY": "禮來", "XOM": "艾克森美孚", "BA": "波音", "F": "福特汽車", "GM": "通用汽車", "BABA": "阿里巴巴", "PDD": "拼多多",
         "SONY": "索尼", "CSCO": "思科", "TXN": "德州儀器", "AMAT": "應用材料", "DELL": "戴爾", "JPM": "摩根大通", "GS": "高盛", "V": "Visa", "MA": "萬事達卡", "NKE": "Nike"}
+
+
+BULK = {}
+
+
+def bulk_news():
+    """鉅亨網美股新聞：一次抓很多，再依中文名稱或代號分到各檔"""
+    now = datetime.now(timezone.utc); end = int(now.timestamp()); start = end - 3 * 86400
+    for page in range(1, 6):
+        t = fetch(f"https://api.cnyes.com/media/api/v1/newslist/category/wd_stock?startAt={start}&endAt={end}&limit=30&page={page}", tries=1)
+        try:
+            items = json.loads(t)["items"]["data"]
+        except Exception:
+            break
+        for it in items:
+            title = (it.get("title") or "").strip()
+            try:
+                dt = datetime.fromtimestamp(int(it.get("publishAt")), timezone.utc)
+            except Exception:
+                dt = None
+            link = f"https://news.cnyes.com/news/id/{it.get('newsId')}"
+            for tk, zh in ZH_Q.items():
+                names = [w for w in zh.split() if len(w) >= 2]
+                if any(w in title for w in names) or re.search(r"[\(（]" + re.escape(tk) + r"[\)）\.-]", title):
+                    BULK.setdefault(tk, []).append((title, "鉅亨網", link, dt))
+        time.sleep(1)
+    print("鉅亨美股新聞分到", len(BULK), "檔")
 
 
 def news(tk, days=3):
@@ -107,9 +157,15 @@ def news(tk, days=3):
                 dt = None
             add(title.strip(), src or ("Yahoo Finance" if not zh else ""), link, dt)
 
+    for x in BULK.get(tk, []):
+        add(*x)
+    if len(out) >= 4:
+        out.sort(key=lambda x: x["d"], reverse=True); return out[:6]
+    time.sleep(1.8)
     q = (ZH_Q.get(tk) or tk) + " 股價"
     rss("https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": q + " when:3d", "hl": "zh-TW", "gl": "TW", "ceid": "TW:zh-Hant"}), True)
-    if len(out) < 4:  # 再用比較寬的關鍵字找一次
+    if not out:  # 再用比較寬的關鍵字找一次
+        time.sleep(1.8)
         rss("https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": (ZH_Q.get(tk) or tk) + " when:3d", "hl": "zh-TW", "gl": "TW", "ceid": "TW:zh-Hant"}), True)
     if len(out) < 4:
         rss(f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={tk}&region=US&lang=en-US", False)
@@ -146,13 +202,13 @@ def main():
             out["s"][k] = [names[k], "us", cs, vs, None]
     out["meta"] = {k: v for k, v in META.items() if k in out["s"]}
     json.dump(out, open("us.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    bulk_news()
     nw = {"updatedAt": out["updatedAt"], "n": {}}
     for tk in out["s"]:
         try:
             nw["n"][tk] = news(tk)
         except Exception as e:
             print("news fail", tk, e)
-        time.sleep(.5)
     json.dump(nw, open("us-news.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     print("新聞：", sum(len(v) for v in nw["n"].values()), "則")
     print("美股：", len(out["s"]), "檔，", len(out["idx"]), "個指數，", len(dates), "天")
