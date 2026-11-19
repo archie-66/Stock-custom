@@ -2,6 +2,10 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19k",date:"11/19",items:[
+    ["🇺🇸","新分頁：美股","New tab: US stocks","多了「美股」分頁：S&P 500、那斯達克、道瓊、費城半導體四個指數，大約 100 檔熱門美股和 ETF 的漲跌排行、搜尋（可以打中文，例如「輝達」）、自選，還有 Anthropic（ANT）新上市專區。台灣時間每天早上自動更新美股收盤價。","A new US tab: four indexes, about 100 popular US stocks and ETFs with gainers/losers, search, favorites, and an Anthropic (ANT) IPO card. US closes update every Taiwan morning."],
+    ["🔮","預測也能分析美股","Predictions for US stocks","預測頁的「個股」可以切換台股或美股，美股會用 S&P 500 當大盤環境來打分數。","The Predict tab can now switch between Taiwan and US stocks; US scores use the S&P 500 as the market backdrop."]
+  ]},
   {v:"2026-11-19j",date:"11/19",items:[
     ["🔊","武士音效","Samurai sounds","新增原創合成的刀聲：開場拔刀「鏘——」、斬開時有破風聲、衝擊和碎冰聲，點畫面也有輕輕的揮刀聲。手機規定要先碰過螢幕才會有聲音，可以在設定 → 武士音效關掉。","New original blade sounds: a ringing draw, a slash with impact and shattering ice, and a light swish on taps. Phones only play sound after you've touched the screen. Turn it off in Settings → Samurai sounds."],
     ["🗡️","拔刀更順更帥","Smoother, cooler draw","開場不會再先閃出文字。刀先微微顫動蓄力，再快速出鞘，帶殘影和刀口的閃光，刀身反光掃過兩次。","No more text flash at the start. The blade trembles, then snaps out of the sheath with an afterimage and a flash, and the edge gleams twice."]
@@ -11,7 +15,7 @@ var NEWS=[
   ]},
   {v:"2026-11-19h",date:"11/19",items:[
     ["⚡","武士開場更炫了","Bigger samurai opening","背景有放射狀的速度線，冰粒往刀身聚集，拔刀時迸出火花，刀擺好架勢後白光一閃，X 字雙斬加上衝擊波，碎冰往四面八方炸開，畫面跟著震動再裂開。整段固定播大約 2.7 秒，播完才進入網站。","Speed lines, ice gathering on the blade, sparks on the draw, a white flash, an X-shaped double slash with a shockwave, shattering ice and a screen shake. It always plays in full (about 2.7s) before the site opens."],
-    ["✨","武士點擊特效","Samurai tap effects","在網站裡點任何地方，都會出現兩道交叉刀痕、冰環、小閃光和碎冰，按到的按鈕或卡片會亮一下。","Tapping anywhere shows two crossing slashes, an ice ring, a flash and shards, and the button or card you tapped lights up."],
+    ["✨","武士點擊特效","Samurai tap effects","在網站裡點任何地方，都會出現兩道交叉刀痕、冰環、小閃光和碎冰。","Tapping anywhere shows two crossing slashes, an ice ring, a flash and shards."],
     ["🗡️","標題的小武士刀重新設計","Redesigned heading katana","每個卡片標題前面改成一把有纏繩刀柄、刀鐔和彎曲刀身的迷你武士刀。","Each card title now has a proper mini katana with a wrapped handle, guard and curved blade."]
   ]},
   {v:"2026-11-19g",date:"11/19",items:[

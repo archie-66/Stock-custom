@@ -4,7 +4,9 @@
 const $=id=>document.getElementById(id);
 const tt=(zh,en)=>window.EN?en:zh;
 const PKEY="tw_pred";
-let H=null,loading=false,code=null;
+let H=null,loading=false,code=null,MK="tw";const CACHE={tw:null,us:null},CODE={tw:null,us:null};
+const isUS=()=>MK==="us";
+const ZH=window.US_ZH||{};const nmOf=(c,n)=>isUS()&&(window.US_ZH||{})[c]?`${window.US_ZH[c]}`:n;
 
 /* ---------- 小工具 ---------- */
 const avg=a=>a.reduce((x,y)=>x+y,0)/a.length;
@@ -97,9 +99,24 @@ function factors(S,t,withMarket){
         src:tt("籌碼分析：大戶持續買進，股價比較有支撐。","Flow analysis: steady buying by big players tends to support a price.")});
     }
   }
-  if(withMarket&&window.D)F.push(marketFactor());
+  if(withMarket&&isUS()&&H&&H.idx&&H.idx.SPX)F.push(usMarketFactor());
+  else if(withMarket&&!isUS()&&window.D)F.push(marketFactor());
   return F;
 }
+function usMarket(){
+  const F=[];if(!H||!H.idx||!H.idx.SPX)return Object.assign(verdict(F),{F});
+  const h=H.idx.SPX[1].filter(x=>x!=null),last=h[h.length-1];
+  if(h.length>=21){const m=avg(h.slice(-20)),m5=avg(h.slice(-5));const s=(last>m?1:-1)+(m5>m?1:-1);
+    F.push({k:"t",ic:"📈",s,name:tt("S&P 500 趨勢","S&P 500 trend"),txt:tt(`S&P 500 在 20 日均線${last>m?"上面":"下面"}，最近 5 天平均${m5>m?"比較高":"比較低"}。`,`The S&P 500 is ${last>m?"above":"below"} its 20-day average.`),src:tt("道氏理論：先看大方向。","Dow Theory: look at the main direction first.")})}
+  if(h.length>=6){const r=(last/h[h.length-6]-1)*100;const s=r>3?2:r>1?1:r<-3?-2:r<-1?-1:0;
+    F.push({k:"r5",ic:"🚀",s,name:tt("近 5 天漲跌","Last 5 days"),txt:tt(`S&P 500 近 5 個交易日${r>=0?"漲":"跌"} ${fmt(Math.abs(r),1)}%。`,`The S&P 500 moved ${pct(r)} in 5 trading days.`),src:tt("動能：短期的方向常會延續。","Momentum: short-term direction often continues.")})}
+  if(H.idx.NDX){const n=H.idx.NDX[1].filter(x=>x!=null);if(n.length>=21){const r=(n[n.length-1]/n[n.length-21]-1)*100,r2=(last/h[h.length-21]-1)*100,d=r-r2;const s=d>2?1:d<-2?-1:0;
+    F.push({k:"b",ic:"💻",s,name:tt("科技股 vs 大盤","Tech vs market"),txt:tt(`20 天裡那斯達克比 S&P 500 ${d>=0?"強":"弱"} ${fmt(Math.abs(d),1)} 個百分點。`,`Over 20 days the Nasdaq did ${fmt(Math.abs(d),1)} pts ${d>=0?"better":"worse"} than the S&P 500.`),src:tt("相對強弱：資金流向哪一類股票。","Relative strength: where the money is flowing.")})}}
+  const R=rsi(h,h.length-1);if(R!=null){const s=R>75?-1:R<30?1:0;F.push({k:"rsi",ic:"🌡️",s,name:tt("S&P 500 RSI","S&P 500 RSI"),txt:tt(`RSI 是 ${fmt(R,0)}。`,`RSI is ${fmt(R,0)}.`),src:tt("威爾德的 RSI 指標。","Wilder's RSI.")})}
+  const v=verdict(F);v.F=F;return v;
+}
+function usMarketFactor(){const M=usMarket();const s=M.score>=25?1:M.score<=-25?-1:0;
+  return {k:"mkt",ic:"🌏",s,name:tt("美股大盤環境","US market"),txt:tt(`美股大盤現在${M.word}。`,`The US market looks ${M.wordEn}.`),src:tt("系統性風險：個股常常跟著整體市場一起動。","Market risk: most stocks move with the market.")}}
 function marketFactor(){
   const M=market();const s=M.score>=25?1:M.score<=-25?-1:0;
   return {k:"mkt",ic:"🌏",s,name:tt("大盤環境","Overall market"),
@@ -147,7 +164,7 @@ const loadP=()=>{try{return JSON.parse(localStorage.getItem(PKEY))||[]}catch(e){
 const saveP=a=>{try{localStorage.setItem(PKEY,JSON.stringify(a))}catch(e){}};
 function checkP(){
   const P=loadP();let ch=false;
-  for(const p of P){if(p.res!=null)continue;const S=series(p.c);if(!S)continue;
+  for(const p of P){if(p.res!=null||(p.m||"tw")!==MK)continue;const S=series(p.c);if(!S)continue;
     const i=S.d.indexOf(p.d);if(i<0||i+5>=S.c.length)continue;
     const fut=S.c[i+5];p.end=fut;p.res=fut>p.px?1:fut<p.px?-1:0;ch=true}
   if(ch)saveP(P);return P;
@@ -202,19 +219,24 @@ function spark(S){
 }
 
 function renderMarket(){
-  const M=market();
-  $("pdMkt").innerHTML=`<div class="sub">${tt("大盤接下來幾天","Market, next few days")}</div>${summary(M,M.F,confOf(M,null))}<div class="pdhead"><div>${gauge(M.score,M.cl)}</div><div><div class="sub">${tt("分數","Score")} <b class="${M.cl}">${M.score>0?"+":""}${M.score}</b>／100</div><div class="sub">${tt("指針越往右越偏漲","Further right = more up")}</div></div></div>${factorList(M.F)}`;
+  const M=isUS()?usMarket():market();
+  $("pdMkt").innerHTML=`<div class="sub">${isUS()?tt("美股大盤（S&P 500）接下來幾天","US market (S&P 500), next few days"):tt("大盤接下來幾天","Market, next few days")}</div>${summary(M,M.F,confOf(M,null))}<div class="pdhead"><div>${gauge(M.score,M.cl)}</div><div><div class="sub">${tt("分數","Score")} <b class="${M.cl}">${M.score>0?"+":""}${M.score}</b>／100</div><div class="sub">${tt("指針越往右越偏漲","Further right = more up")}</div></div></div>${factorList(M.F)}`;
   setTimeout(()=>$("pdMkt").querySelectorAll(".pdn").forEach(n=>n.classList.add("go")),60);
 }
 function pickList(){
-  const out=[],seen=new Set(),add=(c,tag)=>{if(H.s[c]&&!seen.has(c)){seen.add(c);out.push([c,tag])}};
+  const out=[],seen=new Set(),add=(c,tag)=>{if(H&&H.s[c]&&!seen.has(c)){seen.add(c);out.push([c,tag])}};
+  if(isUS()){
+    try{(JSON.parse(localStorage.getItem("tw_uswatch"))||[]).forEach(c=>add(c,"⭐"))}catch(e){}
+    ["ANT","NVDA","AAPL","MSFT","TSLA","GOOGL","AMZN","META","TSM","AMD","PLTR","SPY","QQQ"].forEach(c=>add(c,c==="ANT"?"🆕":"🔥"));
+    return out.slice(0,14);
+  }
   try{(JSON.parse(localStorage.getItem("tw_watch"))||[]).forEach(c=>add(c,"⭐"))}catch(e){}
   try{Object.keys((JSON.parse(localStorage.getItem("tw_sim"))||{}).pos||{}).forEach(c=>add(c,"💼"))}catch(e){}
   if(window.D)D.stocks.slice(0,12).forEach(s=>add(s[0],"🔥"));
   return out.slice(0,14);
 }
 function renderPicks(){
-  $("pdPicks").innerHTML=pickList().map(([c,tag])=>`<button data-c="${c}" class="${c===code?"on":""}">${tag} ${esc(H.s[c][0])}</button>`).join("");
+  $("pdPicks").innerHTML=pickList().map(([c,tag])=>`<button data-c="${c}" class="${c===code?"on":""}">${tag} ${esc(isUS()?((window.US_ZH||{})[c]||c):H.s[c][0])}</button>`).join("");
   $("pdPicks").querySelectorAll("button").forEach(b=>b.onclick=()=>choose(b.dataset.c));
 }
 function choose(c){code=c;$("pdQ").value="";$("pdSug").innerHTML="";renderPicks();renderStock();
@@ -230,8 +252,8 @@ function renderStock(){
     :tt("資料還不夠多，沒辦法回頭檢查準確度。","Not enough data yet to check past accuracy.");
   const good=B.n>=5&&B.hit/B.n>B.base+0.05;
   const P=checkP(),open=P.find(p=>p.c===code&&p.res==null);
-  box.innerHTML=`<h2>${esc(S.n)} <span class="sub">${code}${S.m==="o"?tt(" · 上櫃"," · OTC"):""}</span></h2>
-    <div class="pdprice"><b>${fmt(S.c[t])}</b> <span class="${chg>0?"up":chg<0?"down":"flat"}">${pct(chg)}</span> <span class="sub">${S.d[t].slice(5).replace("-","/")} ${tt("收盤","close")}</span></div>
+  box.innerHTML=`<h2>${esc(isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n)} <span class="sub">${code}${S.m==="o"?tt(" · 上櫃"," · OTC"):isUS()?tt(" · 美股"," · US"):""}</span></h2>
+    <div class="pdprice"><b>${isUS()?"$":""}${fmt(S.c[t])}</b> <span class="${chg>0?"up":chg<0?"down":"flat"}">${pct(chg)}</span> <span class="sub">${S.d[t].slice(5).replace("-","/")} ${tt("收盤","close")}</span></div>
     ${spark(S)}
     <div class="sub" style="margin-top:8px">${tt("接下來 5 個交易日","Next 5 trading days")}</div>${summary(V,F,confOf(V,B))}
     <div class="pdhead"><div>${gauge(V.score,V.cl)}</div><div>
@@ -244,7 +266,7 @@ function renderStock(){
         :`<div class="pdbtn"><button data-g="1" class="up">${tt("📈 漲","📈 Up")}</button><button data-g="-1" class="down">${tt("📉 跌","📉 Down")}</button></div>`}
     </div>`;
   box.querySelectorAll(".pdbtn button").forEach(b=>b.onclick=()=>{
-    const P=loadP();P.push({c:code,n:S.n,d:S.d[t],px:S.c[t],me:+b.dataset.g,model:Math.sign(V.score)||0,res:null});saveP(P);renderStock();renderLog();
+    const P=loadP();P.push({m:MK,c:code,n:isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n,d:S.d[t],px:S.c[t],me:+b.dataset.g,model:Math.sign(V.score)||0,res:null});saveP(P);renderStock();renderLog();
   });
   setTimeout(()=>box.querySelectorAll(".pdn").forEach(n=>n.classList.add("go")),60);
 }
@@ -258,19 +280,19 @@ function renderLog(){
 }
 function search(q){
   q=q.trim().toLowerCase();if(!q||!H){$("pdSug").innerHTML="";return}
-  const r=[];for(const c in H.s){if(c.toLowerCase().startsWith(q)||H.s[c][0].toLowerCase().includes(q))r.push(c);if(r.length>=8)break}
-  $("pdSug").innerHTML=r.length?r.map(c=>`<button data-c="${c}"><b>${esc(H.s[c][0])}</b><span class="sub">${c}</span></button>`).join(""):`<p class="sub">${tt("找不到，可能是成交量太小、沒有收錄。","Not found; it may trade too little to be tracked.")}</p>`;
+  const r=[],Z=window.US_ZH||{};for(const c in H.s){if(c.toLowerCase().startsWith(q)||H.s[c][0].toLowerCase().includes(q)||(isUS()&&Z[c]&&Z[c].toLowerCase().includes(q)))r.push(c);if(r.length>=8)break}
+  $("pdSug").innerHTML=r.length?r.map(c=>`<button data-c="${c}"><b>${esc(isUS()&&(window.US_ZH||{})[c]?window.US_ZH[c]:H.s[c][0])}</b><span class="sub">${c}</span></button>`).join(""):`<p class="sub">${tt("找不到，可能是成交量太小、沒有收錄。","Not found; it may trade too little to be tracked.")}</p>`;
   $("pdSug").querySelectorAll("button").forEach(b=>b.onclick=()=>choose(b.dataset.c));
 }
 async function ensure(){
   if(H||loading)return;loading=true;
   if(window.loaderHTML)$("pdStock").innerHTML=`<div style="display:grid;justify-items:center;gap:8px;padding:18px 0">${loaderHTML(true)}<span class="sub">${tt("正在讀取 60 天的歷史資料…","Loading 60 days of history…")}</span></div>`;
-  try{const r=await fetch("hist.json?t="+Date.now(),{cache:"no-store"});H=await r.json();medCache={};rankCache=null}catch(e){H=null}
+  const mk=MK;try{const r=await fetch((mk==="us"?"us.json":"hist.json")+"?t="+Date.now(),{cache:"no-store"});const j=await r.json();CACHE[mk]=j;if(mk===MK)H=j;medCache={};rankCache=null}catch(e){H=null}
   loading=false;
   if(!H||!H.dates||!H.dates.length){$("pdStock").innerHTML=`<p class="hint">${tt("歷史資料還在準備中（第一次大約需要一個下午）。先看看大盤的部分吧。","History is still being collected (the first time takes about an afternoon). Check the market section for now.")}</p>`;return}
-  $("pdInfo").textContent=tt(`歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔股票 · 更新 ${H.updatedAt||""}`,`History: ${H.dates.length} trading days, ${Object.keys(H.s).length} stocks · updated ${H.updatedAt||""}`);
-  if(!code){const L=pickList();code=L.length?L[0][0]:null}
-  renderPicks();renderStock();renderLog();renderRank();
+  $("pdInfo").textContent=tt(`${isUS()?"美股":"台股"}歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔 · 更新 ${H.updatedAt||""}`,`History: ${H.dates.length} trading days, ${Object.keys(H.s).length} stocks · updated ${H.updatedAt||""}`);
+  if(!code||!H.s[code]){const L=pickList();code=L.length?L[0][0]:null}
+  renderMarket();renderPicks();renderStock();renderLog();renderRank();syncMk();
 }
 document.addEventListener("click",e=>{const b=e.target.closest(".pdlearn,.pdtile");if(!b)return;e.preventDefault();window.openLesson&&openLesson(b.dataset.l)});
 /* 小教室示範：用目前選的股票真的數字 */
@@ -311,6 +333,12 @@ function renderRank(){
     <div class="pdrk"><div><b class="up">▲ ${tt("分數最高","Highest")}</b>${R.up.map(row).join("")||`<p class="sub">—</p>`}</div><div><b class="down">▼ ${tt("分數最低","Lowest")}</b>${R.dn.map(row).join("")||`<p class="sub">—</p>`}</div></div>`;
   $("pdRank").querySelectorAll("button[data-c]").forEach(b=>b.onclick=()=>choose(b.dataset.c));
 }
+function syncMk(){document.querySelectorAll("#pdMk button").forEach(b=>b.classList.toggle("on",b.dataset.m===MK))}
+function setMarket(m){if(m===MK)return;CODE[MK]=code;MK=m;H=CACHE[m];code=CODE[m];rankCache=null;medCache={};syncMk();
+  $("pdSug").innerHTML="";$("pdQ").value="";$("pdQ").placeholder=m==="us"?tt("搜尋美股代號或名稱（例如 ANT、輝達）","Search US ticker or name"):tt("搜尋股票代號或名稱","Search code or name");
+  renderMarket();if(H){if(!code||!H.s[code]){const L=pickList();code=L.length?L[0][0]:null}$("pdInfo").textContent=tt(`${m==="us"?"美股":"台股"}歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔 · 更新 ${H.updatedAt||""}`,`${H.dates.length} days, ${Object.keys(H.s).length} stocks`);renderPicks();renderStock();renderLog();renderRank()}else ensure()}
+document.addEventListener("click",e=>{const b=e.target.closest("#pdMk button");if(b)setMarket(b.dataset.m)});
+window.predictOpen=function(m,c){setMarket(m);if(c){CODE[m]=c;if(H&&H.s[c]){code=c;renderPicks();renderStock()}else code=c}};
 window.predictRender=function(){
   renderLearn();
   if(!$("pdMkt"))return;
