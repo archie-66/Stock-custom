@@ -2,6 +2,11 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19h",date:"11/19",items:[
+    ["⚡","武士開場更炫了","Bigger samurai opening","背景有放射狀的速度線，冰粒往刀身聚集，拔刀時迸出火花，刀擺好架勢後白光一閃，X 字雙斬加上衝擊波，碎冰往四面八方炸開，畫面跟著震動再裂開。整段固定播大約 2.7 秒，播完才進入網站。","Speed lines, ice gathering on the blade, sparks on the draw, a white flash, an X-shaped double slash with a shockwave, shattering ice and a screen shake. It always plays in full (about 2.7s) before the site opens."],
+    ["✨","武士點擊特效","Samurai tap effects","在網站裡點任何地方，都會出現兩道交叉刀痕、冰環、小閃光和碎冰，按到的按鈕或卡片會亮一下。","Tapping anywhere shows two crossing slashes, an ice ring, a flash and shards, and the button or card you tapped lights up."],
+    ["🗡️","標題的小武士刀重新設計","Redesigned heading katana","每個卡片標題前面改成一把有纏繩刀柄、刀鐔和彎曲刀身的迷你武士刀。","Each card title now has a proper mini katana with a wrapped handle, guard and curved blade."]
+  ]},
   {v:"2026-11-19g",date:"11/19",items:[
     ["⚔️","新外觀：武士","New look: Samurai","冷酷的藍白配色加上鋼鐵深藍底，卡片邊緣會閃過刀刃般的反光。按按鈕會出現一道刀光，點畫面會劃出冰藍刀痕和碎冰，背景飄著冰晶。設定 → 外觀 → 武士。","Cool blue and white on steel navy, with blade-like glints on cards. Buttons flash a cut, taps leave an ice-blue slash and shards, and ice crystals drift in the background. Settings → Appearance → Samurai."],
     ["🗡️","武士開場動畫","Samurai opening","打開網站時，武士刀會慢慢出鞘，刀身閃過一道反光，最後一刀把整個畫面斬成兩半，再往兩邊滑開。","On launch, a katana slides out of its sheath, the blade gleams, and one slash splits the screen in two."]
