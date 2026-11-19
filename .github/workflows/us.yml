@@ -29,8 +29,8 @@ jobs:
         run: |
           git config user.name "stock-bot"
           git config user.email "stock-bot@users.noreply.github.com"
-          if [ -n "$(git status --porcelain us.json)" ]; then
-            git add us.json
+          if [ -n "$(git status --porcelain us.json us-news.json)" ]; then
+            git add us.json us-news.json
             git commit -q -m "更新美股資料 $(TZ=Asia/Taipei date '+%F %H:%M')"
             for i in 1 2 3; do git pull -q --rebase origin main && git push -q && break; sleep 5; done
           fi

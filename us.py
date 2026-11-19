@@ -3,12 +3,15 @@
 格式跟 hist.json 一樣（dates＋每檔陣列），預測頁可以直接拿來分析。
 資料來源：Yahoo Finance 圖表資料；抓不到時改用 Stooq。只用 Python 內建模組。
 """
-import csv, io, json, sys, time, urllib.request
+import csv, io, json, sys, time, urllib.request, urllib.parse, re
+import xml.etree.ElementTree as ET
+from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone, timedelta
 
 TW = timezone(timedelta(hours=8))
 UA = {"User-Agent": "Mozilla/5.0 (stock-custom-app)"}
 KEEP = 60
+META = {}
 
 INDEX = {"SPX": ("^GSPC", "^spx", "S&P 500"), "NDX": ("^IXIC", "^ndq", "那斯達克"), "DJI": ("^DJI", "^dji", "道瓊"), "SOX": ("^SOX", "^sox", "費城半導體")}
 TICKERS = """ANT SPCX AAPL MSFT NVDA GOOGL AMZN META TSLA AVGO AMD TSM ASML INTC QCOM MU ARM SMCI ORCL CRM ADBE NFLX PLTR SNOW UBER ABNB SHOP
@@ -33,7 +36,9 @@ def yahoo(sym):
     try:
         r = json.loads(t)["chart"]["result"][0]
         ts, q = r.get("timestamp") or [], r["indicators"]["quote"][0]
-        name = r["meta"].get("shortName") or r["meta"].get("longName") or sym
+        mt = r["meta"]
+        name = mt.get("shortName") or mt.get("longName") or sym
+        META[sym] = {"ln": mt.get("longName") or name, "hi": mt.get("fiftyTwoWeekHigh"), "lo": mt.get("fiftyTwoWeekLow"), "ex": mt.get("fullExchangeName") or mt.get("exchangeName")}
         rows = []
         for i, s in enumerate(ts):
             c = q["close"][i]
@@ -65,6 +70,51 @@ def get(ysym, ssym):
     return name, rows
 
 
+ZH_Q = {"ANT": "Anthropic", "SPCX": "SpaceX", "AAPL": "蘋果 Apple", "MSFT": "微軟", "NVDA": "輝達", "GOOGL": "Google Alphabet", "AMZN": "亞馬遜", "META": "Meta 臉書",
+        "TSLA": "特斯拉", "AVGO": "博通", "AMD": "超微 AMD", "TSM": "台積電 ADR", "ASML": "艾司摩爾", "INTC": "英特爾", "QCOM": "高通", "MU": "美光", "ARM": "安謀 Arm",
+        "SMCI": "美超微", "ORCL": "甲骨文", "NFLX": "Netflix", "PLTR": "Palantir", "BRK-B": "波克夏", "WMT": "沃爾瑪", "COST": "好市多", "KO": "可口可樂", "MCD": "麥當勞",
+        "DIS": "迪士尼", "SBUX": "星巴克", "PFE": "輝瑞", "LLY": "禮來", "XOM": "艾克森美孚", "BA": "波音", "F": "福特汽車", "GM": "通用汽車", "BABA": "阿里巴巴", "PDD": "拼多多",
+        "SONY": "索尼", "CSCO": "思科", "TXN": "德州儀器", "AMAT": "應用材料", "DELL": "戴爾", "JPM": "摩根大通", "GS": "高盛", "V": "Visa", "MA": "萬事達卡", "NKE": "Nike"}
+
+
+def news(tk, days=3):
+    """近 3 天新聞：先找中文（Google 新聞台灣版），不夠再補英文（Yahoo Finance）。只存標題、來源、時間和連結。"""
+    out, seen = [], set()
+    now = datetime.now(timezone.utc)
+
+    def add(title, src, link, dt):
+        key = re.sub(r"\W", "", title.lower())[:40]
+        if not title or key in seen or (dt and (now - dt).days >= days):
+            return
+        seen.add(key); out.append({"t": title[:120], "s": (src or "")[:30], "u": link, "d": dt.strftime("%Y-%m-%dT%H:%MZ") if dt else ""})
+
+    def rss(url, zh):
+        t = fetch(url, tries=1)
+        if not t:
+            return
+        try:
+            root = ET.fromstring(t)
+        except Exception:
+            return
+        for it in root.iter("item"):
+            title = (it.findtext("title") or "").strip(); link = (it.findtext("link") or "").strip()
+            src = (it.findtext("source") or "").strip()
+            if zh and " - " in title:
+                title, src2 = title.rsplit(" - ", 1); src = src or src2
+            try:
+                dt = parsedate_to_datetime(it.findtext("pubDate")).astimezone(timezone.utc)
+            except Exception:
+                dt = None
+            add(title.strip(), src or ("Yahoo Finance" if not zh else ""), link, dt)
+
+    q = (ZH_Q.get(tk) or tk) + " 股價"
+    rss("https://news.google.com/rss/search?" + urllib.parse.urlencode({"q": q + " when:3d", "hl": "zh-TW", "gl": "TW", "ceid": "TW:zh-Hant"}), True)
+    if len(out) < 4:
+        rss(f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={tk}&region=US&lang=en-US", False)
+    out.sort(key=lambda x: x["d"], reverse=True)
+    return out[:6]
+
+
 def main():
     data, names = {}, {}
     for key, (y, s, n) in INDEX.items():
@@ -92,7 +142,17 @@ def main():
             out["idx"][k[1:]] = [names[k], cs]
         else:
             out["s"][k] = [names[k], "us", cs, vs, None]
+    out["meta"] = {k: v for k, v in META.items() if k in out["s"]}
     json.dump(out, open("us.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    nw = {"updatedAt": out["updatedAt"], "n": {}}
+    for tk in out["s"]:
+        try:
+            nw["n"][tk] = news(tk)
+        except Exception as e:
+            print("news fail", tk, e)
+        time.sleep(.5)
+    json.dump(nw, open("us-news.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    print("新聞：", sum(len(v) for v in nw["n"].values()), "則")
     print("美股：", len(out["s"]), "檔，", len(out["idx"]), "個指數，", len(dates), "天")
     return 0
 
