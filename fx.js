@@ -19,7 +19,7 @@ if(!sp){sp=document.createElement("div");sp.id="splash";sp.innerHTML=window.load
 const hideSplash=()=>{if(!sp||sp.classList.contains("off"))return;sp.classList.add("off");if(sp.classList.contains("sam")&&window.samSfx)samSfx.cut();setTimeout(()=>sp.remove(),sp.classList.contains("sam")?1150:550)};
 if(sp&&sp.classList.contains("sam")){setTimeout(()=>window.samSfx&&samSfx.draw(),Math.max(0,500-(performance.now()-(window.__splashT||0))));
   /* 開場時如果手指碰到螢幕，就立刻解鎖聲音 */
-  ["touchstart","pointerdown"].forEach(ev=>sp.addEventListener(ev,()=>{ac()},{once:true,passive:true}))}
+  ["touchend","pointerup","click"].forEach(ev=>sp.addEventListener(ev,()=>{unlock()},{passive:true}))}
 if(sp&&sp.classList.contains("sam"))setTimeout(hideSplash,Math.max(0,1700-(performance.now()-(window.__splashT||0))));/* 武士：固定 2.75 秒，等動畫放完 */
 else if(document.readyState==="complete")setTimeout(hideSplash,700);else window.addEventListener("load",()=>setTimeout(hideSplash,700));
 setTimeout(hideSplash,2600); // 保險：最多 2.6 秒
@@ -36,7 +36,17 @@ if(rf){new MutationObserver(()=>{const on=rf.classList.contains("spin")&&/^(ninj
 /* ---------- 武士音效（用程式即時合成的原創音效）。手機瀏覽器規定：要先碰過螢幕，聲音才放得出來 ---------- */
 let AC=null;
 const sfxOn=()=>{try{return localStorage.getItem("tw_sfx")!=="0"}catch(e){return true}};
-function ac(){if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;AC=new C()}if(AC.state==="suspended")AC.resume();return AC}
+function ac(){if(!AC){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;AC=new C()}if(AC.state!=="running")AC.resume();return AC}
+/* iPhone：要在「手指放開」那一刻解鎖，並把聲音類型設成「播放」，這樣靜音鍵開著也聽得到 */
+let unlocked=false;
+function unlock(){
+  try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
+  const c=ac();if(!c)return;
+  try{const b=c.createBuffer(1,1,22050),s=c.createBufferSource();s.buffer=b;s.connect(c.destination);s.start(0)}catch(e){}
+  if(c.state==="running")unlocked=true;
+}
+["touchend","click","pointerup","keydown"].forEach(ev=>document.addEventListener(ev,()=>{if(!unlocked&&style()==="samurai"&&sfxOn())unlock()},{capture:true,passive:true}));
+document.addEventListener("pointerup",()=>{if(style()==="samurai"&&window.samSfx)samSfx.tap()},{passive:true});
 function noise(c,dur){const b=c.createBuffer(1,Math.max(1,c.sampleRate*dur|0),c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;const s=c.createBufferSource();s.buffer=b;return s}
 function env(c,g,t,a,peak,dec){g.gain.setValueAtTime(0.0001,t);g.gain.exponentialRampToValueAtTime(peak,t+a);g.gain.exponentialRampToValueAtTime(0.0001,t+a+dec)}
 function whoosh(c,t,dur,f0,f1,vol){const n=noise(c,dur),bp=c.createBiquadFilter(),g=c.createGain();bp.type="bandpass";bp.Q.value=1.4;bp.frequency.setValueAtTime(f0,t);bp.frequency.exponentialRampToValueAtTime(f1,t+dur);env(c,g,t,dur*.35,vol,dur*.65);n.connect(bp).connect(g).connect(c.destination);n.start(t);n.stop(t+dur+.05)}
@@ -44,9 +54,9 @@ function ring(c,t,base,vol,dec){[1,1.32,1.84,2.43,3.1].forEach((r,i)=>{const o=c
 function thump(c,t,vol){const o=c.createOscillator(),g=c.createGain();o.type="sine";o.frequency.setValueAtTime(140,t);o.frequency.exponentialRampToValueAtTime(45,t+.25);env(c,g,t,.005,vol,.3);o.connect(g).connect(c.destination);o.start(t);o.stop(t+.35)}
 function shatter(c,t,vol){for(let k=0;k<7;k++){const tt=t+k*.018+Math.random()*.02,n=noise(c,.05),hp=c.createBiquadFilter(),g=c.createGain();hp.type="highpass";hp.frequency.value=3500+Math.random()*3000;env(c,g,tt,.002,vol*(1-k*.1),.05);n.connect(hp).connect(g).connect(c.destination);n.start(tt);n.stop(tt+.08);ring(c,tt,2600+Math.random()*2400,vol*.15,.18)}}
 window.samSfx={
-  draw(){const c=ac();if(!c||!sfxOn())return;const t=c.currentTime+.01;whoosh(c,t,.32,900,4200,.35);ring(c,t+.22,1850,.22,1.4)},
-  cut(){const c=ac();if(!c||!sfxOn())return;const t=c.currentTime+.01;whoosh(c,t,.2,500,5200,.55);thump(c,t+.12,.5);shatter(c,t+.14,.25);ring(c,t+.1,2300,.12,.9)},
-  tap(){const c=ac();if(!c||!sfxOn())return;const t=c.currentTime+.005;whoosh(c,t,.13,1200,5000,.18);ring(c,t+.06,3100,.04,.25)}
+  draw(){const c=ac();if(!c||!sfxOn())return;const t=c.currentTime+.01;whoosh(c,t,.32,900,4200,.6);ring(c,t+.22,1850,.4,1.4)},
+  cut(){const c=ac();if(!c||!sfxOn())return;const t=c.currentTime+.01;whoosh(c,t,.2,500,5200,.8);thump(c,t+.12,.8);shatter(c,t+.14,.4);ring(c,t+.1,2300,.22,.9)},
+  tap(){const c=ac();if(!c||!sfxOn())return;if(c.state!=="running"){unlock();if(c.state!=="running")return}const t=c.currentTime+.005;whoosh(c,t,.13,1200,5000,.4);ring(c,t+.06,3100,.09,.25)}
 };
 
 /* ---------- 背景光點（canvas） ---------- */
@@ -88,7 +98,7 @@ fxStart();
 /* ---------- 點擊特效 ---------- */
 document.addEventListener("pointerdown",e=>{if(!fxOn()&&style()!=="samurai")return;
   const add=(el,ms)=>{el.style.left=e.clientX+"px";el.style.top=e.clientY+"px";document.body.appendChild(el);setTimeout(()=>el.remove(),ms)};
-  if(style()==="samurai"){const r0=-20-Math.random()*25;if(window.samSfx)samSfx.tap();
+  if(style()==="samurai"){const r0=-20-Math.random()*25;
     const c=document.createElement("i");c.className="icut";c.style.setProperty("--r",r0+"deg");add(c,560);
     const c2=document.createElement("i");c2.className="icut i2";c2.style.setProperty("--r",(r0+75+Math.random()*20)+"deg");add(c2,620);
     const rg=document.createElement("i");rg.className="iring";add(rg,600);
@@ -104,5 +114,5 @@ document.addEventListener("pointerdown",e=>{if(!fxOn()&&style()!=="samurai")retu
 /* 設定：武士音效開關 */
 const sx=document.getElementById("setSfx");
 if(sx){const sync=()=>sx.querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.v===(sfxOn()?"1":"0")));
-  sx.querySelectorAll("button").forEach(b=>b.onclick=()=>{try{localStorage.setItem("tw_sfx",b.dataset.v)}catch(e){}sync();if(b.dataset.v==="1"&&window.samSfx)samSfx.draw()});sync()}
+  sx.querySelectorAll("button").forEach(b=>b.onclick=()=>{try{localStorage.setItem("tw_sfx",b.dataset.v)}catch(e){}sync();if(b.dataset.v==="1"&&window.samSfx){unlock();samSfx.draw()}});sync()}
 })();
