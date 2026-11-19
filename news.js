@@ -2,6 +2,10 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19c",date:"11/19",items:[
+    ["🔮","新外觀：咒術","New look: Mystic","深靛藍夜色加紫藍光暈，按鈕和分頁會發光，但數字和漲跌顏色保持清楚。設定 → 外觀 → 咒術。","Deep indigo with a violet glow. Buttons and tabs glow, but numbers and up/down colors stay crisp. Settings → Appearance → Mystic."],
+    ["🥷","忍者外觀改版","Ninja look refresh","改成跟行事曆一樣的標準：朱紅重點色、明體標題、標題左邊一條色條，深色模式也能用，畫面更乾淨。","Now matches the calendar app: red accent, serif headings and a side bar on titles. Works in dark mode and looks cleaner."]
+  ]},
   {v:"2026-11-19b",date:"11/19",items:[
     ["🚦","預測看得更清楚","Clearer predictions","每檔股票最上面直接寫「偏漲／偏跌」、把握度，以及支持和反對的理由。還多了一個總覽，看哪些股票分數最高、最低。","Each stock now opens with a clear up/down call, a confidence level, and reasons for and against, plus an overview of the highest and lowest scores."],
     ["📚","理論小教室","Theory class","10 個經濟學和投資理論，每個 1 分鐘：一句話、用真的股票示範、常見誤會、小測驗，答對才算學會。","10 economics and investing ideas, one minute each: one line, a real-stock example, a common mistake, and a quiz."]

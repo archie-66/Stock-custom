@@ -23,7 +23,7 @@
   --st:env(safe-area-inset-top,0px); --sb:env(safe-area-inset-bottom,0px);
 }
 :root[data-theme="dark"]{--bg:#131418;--card:#1d1f25;--ink:#f1f1f4;--mute:#9b9ba5;--line:#2b2e36;--redbg:#3b1a20;--greenbg:#14301f;--accentbg:#1e2547;--warnbg:#3a2d14;--red:#ff5d70;--green:#3fd081;--accent:#8aa2ff;color-scheme:dark}
-@media (prefers-color-scheme:dark){:root:not([data-theme="light"]):not([data-theme="ninja"]){--bg:#131418;--card:#1d1f25;--ink:#f1f1f4;--mute:#9b9ba5;--line:#2b2e36;--redbg:#3b1a20;--greenbg:#14301f;--accentbg:#1e2547;--warnbg:#3a2d14;--red:#ff5d70;--green:#3fd081;--accent:#8aa2ff;color-scheme:dark}}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#131418;--card:#1d1f25;--ink:#f1f1f4;--mute:#9b9ba5;--line:#2b2e36;--redbg:#3b1a20;--greenbg:#14301f;--accentbg:#1e2547;--warnbg:#3a2d14;--red:#ff5d70;--green:#3fd081;--accent:#8aa2ff;color-scheme:dark}}
 :root[data-color="intl"]{--up:var(--green);--upbg:var(--greenbg);--down:var(--red);--downbg:var(--redbg)}
 /* 預測分頁 */
 .pdhead{display:flex;align-items:center;gap:12px;margin:6px 0 8px}
@@ -80,23 +80,41 @@
 .pdtile{position:relative;display:flex;align-items:center;gap:8px;border:1px solid var(--line);background:var(--bg);color:var(--ink);font:inherit;font-size:13.5px;font-weight:700;padding:10px;border-radius:12px;text-align:left;line-height:1.3}
 .pdtile .ic{font-size:20px}.pdtile.done{border-color:var(--green)}.pdtile i{position:absolute;right:6px;top:4px;font-style:normal;font-size:12px}
 /* ===== 忍者主題（原創：和紙、墨色山、朱紅印章、手裏劍） ===== */
-:root[data-theme="ninja"]{--bg:#e9dfc8;--card:#f8f1e1;--ink:#1d1a17;--mute:#6f6455;--line:#d6c6a2;--accent:#c8361d;--accentbg:#f5dccd;--warnbg:#f1e0b5;--r:6px;color-scheme:light}
-:root[data-theme="ninja"] body{background:var(--bg) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 800' preserveAspectRatio='xMidYMax slice'%3E%3Ccircle cx='310' cy='130' r='70' fill='%23c8361d' fill-opacity='.13'/%3E%3Cpath d='M0 640 L70 560 L120 600 L190 500 L250 580 L300 540 L400 620 L400 800 L0 800Z' fill='%231d1a17' fill-opacity='.07'/%3E%3Cpath d='M0 700 L60 650 L140 690 L220 630 L300 680 L360 650 L400 670 L400 800 L0 800Z' fill='%231d1a17' fill-opacity='.10'/%3E%3C/svg%3E") center bottom/cover no-repeat fixed}
-:root[data-theme="ninja"] .top{background:linear-gradient(var(--bg) 70%,transparent)}
-:root[data-theme="ninja"] .top h1,:root[data-theme="ninja"] .card h2,:root[data-theme="ninja"] .big{font-family:"Noto Serif TC",serif;letter-spacing:.04em}
-:root[data-theme="ninja"] .card{border:2px solid var(--ink);border-radius:6px;box-shadow:4px 4px 0 var(--ink);position:relative}
-:root[data-theme="ninja"] .card h2{display:flex;align-items:center;gap:8px}
-:root[data-theme="ninja"] .card h2::before{content:"忍";flex:none;width:22px;height:22px;display:grid;place-items:center;font-size:13px;color:#f8f1e1;background:var(--accent);border-radius:3px;transform:rotate(-6deg);font-family:"Noto Serif TC",serif}
-:root[data-theme="ninja"] .card.hero::after{content:"";position:absolute;right:-14px;top:-14px;width:44px;height:44px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Cg fill='%231d1a17'%3E%3Cpath d='M0-48 L9-9 L48 0 L9 9 L0 48 L-9 9 L-48 0 L-9-9Z'/%3E%3C/g%3E%3Ccircle r='7' fill='%23f8f1e1'/%3E%3C/svg%3E") center/contain no-repeat;animation:spin 6s linear infinite;pointer-events:none}
-:root[data-theme="ninja"] .stat,:root[data-theme="ninja"] .tip{border-radius:4px}
-:root[data-theme="ninja"] .tip{border-left:4px solid var(--accent)}
-:root[data-theme="ninja"] .tabs{background:#1d1a17;border:2px solid #1d1a17;border-radius:8px;box-shadow:0 10px 30px -12px rgba(0,0,0,.5)}
-:root[data-theme="ninja"] .tabs .ind{background:var(--accent);border-radius:5px}
-:root[data-theme="ninja"] .tabs button{color:#bfb39a}
-:root[data-theme="ninja"] .tabs button.on{color:#f8f1e1}
-:root[data-theme="ninja"] .icon-btn,:root[data-theme="ninja"] .mode{border:2px solid var(--ink)}
-:root[data-theme="ninja"] .mode button.on{background:var(--accent);color:#f8f1e1}
-:root[data-theme="ninja"] .btn{border-radius:4px}
+/* ===== 忍者（跟行事曆同一套標準：朱紅重點色、明體標題、10px 圓角、標題左邊一條色條；淺色/深色跟著系統） ===== */
+:root:not(#_)[data-theme="ninja"]{--accent:#e0384b;--accentbg:color-mix(in srgb,#e0384b 12%,var(--card));--r:10px;--hf:"Songti TC","Noto Serif TC","Hiragino Mincho ProN",serif}
+:root[data-theme="ninja"] body{background-image:radial-gradient(circle at 90% 7%,rgba(224,56,75,.09) 0 64px,transparent 65px),url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='46' height='23' viewBox='0 0 46 23'%3E%3Cg fill='none' stroke='%23e0384b' stroke-opacity='.07'%3E%3Ccircle cx='23' cy='23' r='20'/%3E%3Ccircle cx='23' cy='23' r='13'/%3E%3Ccircle cx='0' cy='0' r='20'/%3E%3Ccircle cx='46' cy='0' r='20'/%3E%3C/g%3E%3C/svg%3E");background-attachment:fixed}
+:root[data-theme="ninja"] .top h1,:root[data-theme="ninja"] .card h2,:root[data-theme="ninja"] .setsheet h3{font-family:var(--hf);letter-spacing:.06em}
+:root[data-theme="ninja"] .card h2::before{content:"";display:inline-block;width:4px;height:.9em;background:var(--accent);margin-right:8px;vertical-align:-1px;border-radius:1px}
+:root[data-theme="ninja"] .card{position:relative}
+:root[data-theme="ninja"] .card.hero::after{content:"";position:absolute;right:-10px;top:-10px;width:30px;height:30px;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='-50 -50 100 100'%3E%3Cg fill='%23e0384b'%3E%3Cpath d='M0-48 L9-9 L48 0 L9 9 L0 48 L-9 9 L-48 0 L-9-9Z'/%3E%3C/g%3E%3Ccircle r='7' fill='%23fff'/%3E%3C/svg%3E") center/contain no-repeat;animation:spin 6s linear infinite;pointer-events:none}
+:root[data-theme="ninja"] .stat,:root[data-theme="ninja"] .tip,:root[data-theme="ninja"] .btn,:root[data-theme="ninja"] .icon-btn,:root[data-theme="ninja"] .sinput,:root[data-theme="ninja"] .seg,:root[data-theme="ninja"] .seg .knob,:root[data-theme="ninja"] .seg button{border-radius:7px}
+:root[data-theme="ninja"] .tabs{border-radius:10px}:root[data-theme="ninja"] .tabs .ind{background:var(--accent);border-radius:7px}
+:root[data-theme="ninja"] .tabs button.on{color:#fff}
+:root[data-theme="ninja"] .mode{border-radius:8px}:root[data-theme="ninja"] .mode button{border-radius:6px}
+
+/* ===== 咒術（原創：深靛藍夜色、紫藍光暈、銳利邊角；數字和漲跌色保持清楚，不加光暈） ===== */
+:root:not(#_)[data-theme="jjk"]{color-scheme:dark;--bg:#0a0a15;--card:#13132c;--ink:#ecebff;--mute:#a3a1cf;--line:#2c2b55;--accent:#8f7dff;--accentbg:#1c1945;--warnbg:#2b2140;
+  --red:#ff5d70;--redbg:#3a1527;--green:#3fd081;--greenbg:#0f2f24;--flat:#8c8ab5;--r:6px;--hf:"Songti TC","Noto Serif TC","Hiragino Mincho ProN",serif}
+:root[data-theme="jjk"] body{background:radial-gradient(circle at 88% 4%,rgba(124,107,255,.26),transparent 42%),radial-gradient(circle at 6% 96%,rgba(61,123,255,.18),transparent 45%),repeating-linear-gradient(115deg,transparent 0 38px,rgba(124,107,255,.04) 38px 39px),var(--bg);background-attachment:fixed}
+:root[data-theme="jjk"] body::after{content:"呪";position:fixed;right:-14px;bottom:90px;font:900 220px/1 var(--hf);color:#7c6bff;opacity:.05;pointer-events:none;z-index:0;animation:jkp 6s ease-in-out infinite}
+@keyframes jkp{50%{opacity:.09}}
+:root[data-theme="jjk"] .top{background:linear-gradient(var(--bg) 70%,transparent)}
+:root[data-theme="jjk"] .top h1{font-family:var(--hf);letter-spacing:.1em;text-shadow:0 0 16px rgba(124,107,255,.6)}
+:root[data-theme="jjk"] .card{background:linear-gradient(160deg,rgba(30,29,66,.94),rgba(16,16,38,.94));border:1px solid rgba(124,107,255,.26);box-shadow:inset 0 1px 0 rgba(255,255,255,.05),0 14px 30px -18px rgba(90,70,255,.7)}
+:root[data-theme="jjk"] .card h2{font-family:var(--hf);letter-spacing:.05em}
+:root[data-theme="jjk"] .card h2::before{content:"";display:inline-block;width:4px;height:.9em;background:linear-gradient(#8fa0ff,#6a4dff);margin-right:8px;vertical-align:-1px;box-shadow:0 0 8px #7c6bff}
+:root[data-theme="jjk"] .stat,:root[data-theme="jjk"] .tip,:root[data-theme="jjk"] .btn,:root[data-theme="jjk"] .icon-btn,:root[data-theme="jjk"] .sinput,:root[data-theme="jjk"] .seg,:root[data-theme="jjk"] .seg .knob,:root[data-theme="jjk"] .seg button,:root[data-theme="jjk"] .pdf details,:root[data-theme="jjk"] .pdtile{border-radius:4px}
+:root[data-theme="jjk"] .stat,:root[data-theme="jjk"] .pdf details,:root[data-theme="jjk"] .pdtile{background:rgba(10,10,28,.55);border-color:rgba(124,107,255,.22)}
+:root[data-theme="jjk"] .icon-btn,:root[data-theme="jjk"] .mode{background:linear-gradient(160deg,rgba(46,44,104,.95),rgba(22,22,56,.95));border:1px solid rgba(143,160,255,.45);box-shadow:0 0 14px -4px rgba(124,107,255,.7)}
+:root[data-theme="jjk"] .mode{border-radius:6px}:root[data-theme="jjk"] .mode button{border-radius:4px}
+:root[data-theme="jjk"] .mode button.on,:root[data-theme="jjk"] .btn:not(.ghost){background:linear-gradient(135deg,#6a4dff,#3d7bff);color:#fff;box-shadow:0 0 14px rgba(106,77,255,.7)}
+:root[data-theme="jjk"] .tabs{background:rgba(14,14,34,.88);border:1px solid rgba(124,107,255,.3);border-radius:6px;box-shadow:0 10px 30px -10px rgba(90,70,255,.55)}
+:root[data-theme="jjk"] .tabs .ind{background:linear-gradient(135deg,#6a4dff,#3d7bff);border-radius:4px;box-shadow:0 0 14px rgba(106,77,255,.7)}
+:root[data-theme="jjk"] .tabs button.on{color:#fff}
+:root[data-theme="jjk"] .setsheet,:root[data-theme="jjk"] .lsn,:root[data-theme="jjk"] .newscard{background:#14142b;border-top:2px solid var(--accent);border-radius:8px 8px 0 0;box-shadow:0 -10px 40px -10px rgba(106,77,255,.5)}
+:root[data-theme="jjk"] .newscard{border-radius:8px}
+:root[data-theme="jjk"] .sinput{background:rgba(10,10,28,.7);border-color:rgba(124,107,255,.35)}
+:root[data-theme="jjk"] .pdsum{border-radius:6px}
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 html,body{margin:0;height:100%;overflow:hidden;background:var(--bg);color:var(--ink);font-family:"Noto Sans TC",system-ui,sans-serif;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
 body.simple .adv{display:none!important}
@@ -603,7 +621,7 @@ footer a{color:var(--mute)}
   <div class="grab"></div>
   <div class="hrow"><h3>設定</h3><button class="btn ghost" id="setDone" style="padding:6px 14px">完成</button></div>
   <div class="setrow"><div class="lab">語言</div><div class="seg" id="setLang"><button data-v="zh">中文</button><button data-v="en">English</button></div></div>
-  <div class="setrow"><div class="lab">外觀</div><div class="seg" id="setTheme"><button data-v="auto">跟隨系統</button><button data-v="light">淺色</button><button data-v="dark">深色</button><button data-v="ninja">忍者</button></div></div>
+  <div class="setrow"><div class="lab">外觀</div><div class="seg" id="setTheme"><button data-v="auto">跟隨系統</button><button data-v="light">淺色</button><button data-v="dark">深色</button><button data-v="ninja">忍者</button><button data-v="jjk">咒術</button></div></div>
   <div class="setrow"><div class="lab">漲跌顏色</div><div class="seg" id="setColor"><button data-v="tw">台股 <span class="swatch" style="background:var(--red)"></span>漲 <span class="swatch" style="background:var(--green)"></span>跌</button><button data-v="intl">國際 <span class="swatch" style="background:var(--green)"></span>漲 <span class="swatch" style="background:var(--red)"></span>跌</button></div></div>
   <div class="setrow"><div class="lab">顯示內容</div><div class="seg" id="setMode"><button data-v="s">簡易</button><button data-v="a">進階</button></div></div>
   <div class="setrow"><div class="lab">更新後顯示新功能</div><div class="seg" id="setNews"><button data-v="1">開</button><button data-v="0">關</button></div><button class="btn ghost" id="seeNews" style="margin-top:8px;padding:6px 14px">看最近的更新</button></div>
@@ -681,8 +699,8 @@ const intl=()=>document.documentElement.dataset.color==="intl";
 const kName=up=>EN?(up?(intl()?"green candle":"red candle"):(intl()?"red candle":"green candle")):(up?(intl()?"綠 K":"紅 K"):(intl()?"紅（黑）K":"綠（黑）K"));
 function applyTheme(v){
   const r=document.documentElement;if(v==="auto")delete r.dataset.theme;else r.dataset.theme=v;
-  const dark=v==="dark"||(v==="auto"&&matchMedia("(prefers-color-scheme: dark)").matches);
-  document.querySelector('meta[name="theme-color"]').content=v==="ninja"?"#e9dfc8":dark?"#131418":"#f4f1ea";
+  const dark=v==="dark"||((v==="auto"||v==="ninja")&&matchMedia("(prefers-color-scheme: dark)").matches);
+  document.querySelector('meta[name="theme-color"]').content=v==="jjk"?"#0a0a15":dark?"#131418":"#f4f1ea";
   document.querySelectorAll("#setTheme button").forEach(b=>b.classList.toggle("on",b.dataset.v===v));store.set("twtheme",v)}
 function applyColor(v){
   const r=document.documentElement;if(v==="intl")r.dataset.color="intl";else delete r.dataset.color;
