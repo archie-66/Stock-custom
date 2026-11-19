@@ -2,6 +2,9 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19i",date:"11/19",items:[
+    ["🎬","武士開場更順、更直接","Smoother samurai opening","拿掉開場的文字，動畫播完直接一刀切開進入網站，播放時也不會卡卡的了。另外修好了點擊卡片時，卡片會消失的問題。","The opening text is gone, so it cuts straight into the site, and it plays smoothly now. Also fixed tapped cards disappearing."]
+  ]},
   {v:"2026-11-19h",date:"11/19",items:[
     ["⚡","武士開場更炫了","Bigger samurai opening","背景有放射狀的速度線，冰粒往刀身聚集，拔刀時迸出火花，刀擺好架勢後白光一閃，X 字雙斬加上衝擊波，碎冰往四面八方炸開，畫面跟著震動再裂開。整段固定播大約 2.7 秒，播完才進入網站。","Speed lines, ice gathering on the blade, sparks on the draw, a white flash, an X-shaped double slash with a shockwave, shattering ice and a screen shake. It always plays in full (about 2.7s) before the site opens."],
     ["✨","武士點擊特效","Samurai tap effects","在網站裡點任何地方，都會出現兩道交叉刀痕、冰環、小閃光和碎冰，按到的按鈕或卡片會亮一下。","Tapping anywhere shows two crossing slashes, an ice ring, a flash and shards, and the button or card you tapped lights up."],
