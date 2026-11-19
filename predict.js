@@ -264,6 +264,7 @@ function search(q){
 }
 async function ensure(){
   if(H||loading)return;loading=true;
+  if(window.loaderHTML)$("pdStock").innerHTML=`<div style="display:grid;justify-items:center;gap:8px;padding:18px 0">${loaderHTML(true)}<span class="sub">${tt("正在讀取 60 天的歷史資料…","Loading 60 days of history…")}</span></div>`;
   try{const r=await fetch("hist.json?t="+Date.now(),{cache:"no-store"});H=await r.json();medCache={};rankCache=null}catch(e){H=null}
   loading=false;
   if(!H||!H.dates||!H.dates.length){$("pdStock").innerHTML=`<p class="hint">${tt("歷史資料還在準備中（第一次大約需要一個下午）。先看看大盤的部分吧。","History is still being collected (the first time takes about an afternoon). Check the market section for now.")}</p>`;return}

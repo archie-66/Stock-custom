@@ -2,6 +2,9 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19d",date:"11/19",items:[
+    ["✨","按鍵特效和載入動畫","Button effects & loading animation","跟行事曆一樣：忍者外觀有紅色光點、偶爾飛過的手裏劍，點擊會出現刀光；咒術外觀有紫藍光點和光痕，點擊會出現光環。按鈕按下去會縮、會亮，主要按鈕有光掃過。打開網站和重新整理時也有載入動畫。","Same as the calendar: Ninja has red sparks, a passing shuriken and slash taps; Mystic has violet sparks, light streaks and ring taps. Buttons press, glow and shine, and there's a loading animation on launch and refresh."]
+  ]},
   {v:"2026-11-19c",date:"11/19",items:[
     ["🔮","新外觀：咒術","New look: Mystic","深靛藍夜色加紫藍光暈，按鈕和分頁會發光，但數字和漲跌顏色保持清楚。設定 → 外觀 → 咒術。","Deep indigo with a violet glow. Buttons and tabs glow, but numbers and up/down colors stay crisp. Settings → Appearance → Mystic."],
     ["🥷","忍者外觀改版","Ninja look refresh","改成跟行事曆一樣的標準：朱紅重點色、明體標題、標題左邊一條色條，深色模式也能用，畫面更乾淨。","Now matches the calendar app: red accent, serif headings and a side bar on titles. Works in dark mode and looks cleaner."]
