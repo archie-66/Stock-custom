@@ -139,6 +139,19 @@ def main():
                 e["f"][ds] = inst[code]
         H["dates"].append(ds); changed = True
 
+    # 法人資料有時比收盤行情晚公布：最近 3 天如果還沒有，就再補抓一次
+    for ds in sorted(H["dates"])[-3:]:
+        if any(ds in e["f"] for e in H["s"].values()):
+            continue
+        dt = datetime.strptime(ds, "%Y-%m-%d").replace(tzinfo=TW)
+        inst = day_inst(dt); time.sleep(3)
+        if inst:
+            print(ds, "補上法人", len(inst))
+            for code, e in H["s"].items():
+                if code in inst:
+                    e["f"][ds] = inst[code]
+            changed = True
+
     if not changed:
         print("歷史資料不用更新")
         return 0
