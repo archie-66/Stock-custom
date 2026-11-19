@@ -2,6 +2,10 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-19j",date:"11/19",items:[
+    ["🔊","武士音效","Samurai sounds","新增原創合成的刀聲：開場拔刀「鏘——」、斬開時有破風聲、衝擊和碎冰聲，點畫面也有輕輕的揮刀聲。手機規定要先碰過螢幕才會有聲音，可以在設定 → 武士音效關掉。","New original blade sounds: a ringing draw, a slash with impact and shattering ice, and a light swish on taps. Phones only play sound after you've touched the screen. Turn it off in Settings → Samurai sounds."],
+    ["🗡️","拔刀更順更帥","Smoother, cooler draw","開場不會再先閃出文字。刀先微微顫動蓄力，再快速出鞘，帶殘影和刀口的閃光，刀身反光掃過兩次。","No more text flash at the start. The blade trembles, then snaps out of the sheath with an afterimage and a flash, and the edge gleams twice."]
+  ]},
   {v:"2026-11-19i",date:"11/19",items:[
     ["🎬","武士開場更順、更直接","Smoother samurai opening","拿掉開場的文字，動畫播完直接一刀切開進入網站，播放時也不會卡卡的了。另外修好了點擊卡片時，卡片會消失的問題。","The opening text is gone, so it cuts straight into the site, and it plays smoothly now. Also fixed tapped cards disappearing."]
   ]},
