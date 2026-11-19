@@ -512,7 +512,7 @@ footer a{color:var(--mute)}
 .ldr .nj{display:none;position:absolute;inset:0;pointer-events:none}
 :root[data-theme="ninja"] .ldr .nj{display:block}
 .nj>*{position:absolute}
-.nj .ink{inset:-30%;border-radius:47% 53% 41% 59%/55% 44% 56% 45%;background:radial-gradient(circle at 50% 50%,rgba(224,56,75,.32),rgba(120,10,25,.18) 45%,transparent 70%);filter:blur(4px);animation:inkp 1.4s ease-in-out infinite}
+.nj .ink{inset:-30%;border-radius:47% 53% 41% 59%/55% 44% 56% 45%;background:radial-gradient(circle at 50% 50%,rgba(224,56,75,.16),rgba(120,10,25,.08) 45%,transparent 70%);filter:blur(4px);animation:inkp 1.4s ease-in-out infinite}
 @keyframes inkp{50%{transform:scale(1.12) rotate(12deg);border-radius:55% 45% 52% 48%/45% 56% 44% 55%}}
 .nj .ens{inset:-26%;width:152%;height:152%;overflow:visible;animation:spin 2.4s linear infinite}
 .nj .ens path{fill:none;stroke-linecap:round}
@@ -544,6 +544,29 @@ footer a{color:var(--mute)}
 :root[data-theme="ninja"] #splash.off .smk{animation:poof .55s ease-out forwards;animation-delay:var(--d)}
 @keyframes poof{0%{opacity:0;transform:translate(0,0) scale(.3)}30%{opacity:1}100%{opacity:0;transform:translate(var(--x),var(--y)) scale(2.4)}}
 .ldr.xs .nj>:not(.ghost){display:none}
+
+/* ===== 忍者動畫 v3（原創）：紅月、櫻花風暴、金色月牙刀光 ===== */
+.nj .moon{inset:-24%;border-radius:50%;background:transparent;box-shadow:16px -10px 0 0 #e0384b;filter:drop-shadow(0 0 10px rgba(224,56,75,.7)) drop-shadow(0 0 26px rgba(255,120,90,.45));opacity:.85;transform:rotate(-20deg);animation:moonp 3s ease-in-out infinite}
+@keyframes moonp{50%{opacity:1;filter:drop-shadow(0 0 14px rgba(224,56,75,.9)) drop-shadow(0 0 36px rgba(255,140,90,.6))}}
+.nj .cr{inset:-30%;border-radius:50%;border:4px solid transparent;border-top-color:#ffe08a;filter:drop-shadow(0 0 4px #fff) drop-shadow(0 0 10px #ffb02e) drop-shadow(0 0 18px #e0384b)}
+.nj .c1{animation:cr1 .9s cubic-bezier(.5,0,.3,1) infinite}
+.nj .c2{inset:-44%;border-width:3px;border-top-color:#fff;animation:cr2 1.3s cubic-bezier(.5,0,.3,1) infinite}
+.nj .c3{inset:-12%;border-width:3px;border-top-color:#ff8fa0;animation:cr3 .7s linear infinite}
+@keyframes cr1{from{transform:rotate(0) scaleY(.55)}to{transform:rotate(360deg) scaleY(.55)}}
+@keyframes cr2{from{transform:rotate(200deg) rotateX(60deg)}to{transform:rotate(-160deg) rotateX(60deg)}}
+@keyframes cr3{to{transform:rotate(360deg)}}
+.nj .pt{inset:0;transform:rotate(var(--a))}
+.nj .pt::before{content:"";position:absolute;left:50%;top:50%;width:calc(16% * var(--s));height:calc(10% * var(--s));border-radius:100% 0 100% 0;background:linear-gradient(135deg,#fff,#ffc4d2 45%,#ff6f8f);box-shadow:0 0 6px rgba(255,140,170,.8);animation:petal 2.2s ease-out infinite;animation-delay:var(--d)}
+@keyframes petal{0%{transform:translate(-50%,-50%) rotate(var(--r)) translateY(-120%) scale(.4);opacity:0}15%{opacity:1}100%{transform:translate(-50%,-50%) rotate(calc(var(--r) + 540deg)) translateY(-330%) scale(1);opacity:0}}
+.nj .gl{display:none;inset:20%;border-radius:50%;background:radial-gradient(circle,#fff,rgba(255,220,180,.6) 40%,transparent 70%);mix-blend-mode:screen;animation:glp 1s ease-in-out infinite}
+@keyframes glp{50%{transform:scale(1.25);opacity:.6}}
+.nj .e2{stroke:#ffcf6b;opacity:.9}
+:root[data-theme="ninja"] .ldr::before{display:none}
+:root[data-theme="ninja"] .ldr .ln{color:#1d1a17;filter:drop-shadow(0 0 2px #fff) drop-shadow(0 0 8px rgba(255,80,90,.9))}
+:root[data-theme="ninja"] .ldr .ln circle{fill:#ffcf6b}
+.nj .ghost{color:#1d1a17}
+:root[data-theme="ninja"] #splash{background:radial-gradient(circle at 50% 46%,color-mix(in srgb,#e0384b 14%,var(--bg)),var(--bg) 60%)}
+.ldr.xs .nj .moon,.ldr.xs .nj .cr,.ldr.xs .nj .pt,.ldr.xs .nj .gl{display:none}
 </style>
 </head>
 <body class="simple">
