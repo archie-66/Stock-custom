@@ -66,16 +66,33 @@ KO:{ceo:["Henrique Braun","原本是營運長，2026 年 11 月接任執行長�
  w:["股價已經漲很多，期望很高","AI 投資若放緩會受影響"]}
 };
 window.LEADERS.TSM=window.LEADERS["2330"];
-/* 畫出「公司遠見、策略和執行長」區塊 */
-window.leadersHTML=function(code){
-  const L=(window.LEADERS||{})[code];if(!L)return "";
-  const e=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-  return `<h3 class="ush">🧭 ${window.EN?"Vision, strategy & leadership":"公司遠見、策略和執行長"}</h3>
-  <div class="ldr2">
-    <div class="ldceo"><span class="ic">👤</span><div><b>${e(L.ceo[0])}</b><p>${e(L.ceo[1])}</p></div></div>
-    <div class="ldrow"><span class="ic">🔭</span><div><b>${window.EN?"Vision":"遠見"}</b><p>${e(L.v)}</p></div></div>
-    <div class="ldrow"><span class="ic">♟️</span><div><b>${window.EN?"Strategy":"策略重點"}</b><ul>${L.s.map(x=>`<li>${e(x)}</li>`).join("")}</ul></div></div>
-    ${L.w&&L.w.length?`<div class="ldrow"><span class="ic">⚠️</span><div><b>${window.EN?"Watch out for":"要注意"}</b><ul>${L.w.map(x=>`<li>${e(x)}</li>`).join("")}</ul></div></div>`:""}
-    <p class="sub" style="margin:2px 0 0">${window.EN?"Compiled":"資料整理於"} ${window.LEADERS_ASOF}${window.EN?"; leadership can change.":"，人事可能變動，以公司公告為準。"}</p>
-  </div>`;
+/* 畫出「公司遠見、策略和執行長」區塊：
+   台股＝官方董事長／總經理＋（熱門股專屬內容 或 產業共通重點 或 ETF 說明）；美股＝逐檔整理＋每天用公開資料庫核對執行長 */
+window.TWINFO=null;window.USCEO=null;
+(function(){
+  const rr=()=>{document.querySelectorAll("[data-lead]").forEach(el=>{const h=window.leadersHTML(el.dataset.lead,true);if(h)el.innerHTML=h})};
+  setTimeout(()=>{fetch("tw-info.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{window.TWINFO=j;rr()}).catch(()=>{});
+    fetch("us.json",{cache:"no-store"}).then(r=>r.json()).then(j=>{window.USCEO={};for(const k in (j.meta||{}))if(j.meta[k].ceo)window.USCEO[k]=j.meta[k].ceo;rr()}).catch(()=>{})},1500);
+})();
+window.leadersHTML=function(code,inner){
+  const EN=window.EN,e=s=>String(s==null?"":s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+  const isTW=/^\d/.test(code),I=isTW&&window.TWINFO?window.TWINFO[code]:null;
+  let L=(window.LEADERS||{})[code],kind="own";
+  const stock=(window.D&&D.stocks||[]).find(x=>x[0]===code),nm=stock?stock[1]:"";
+  if(!L&&isTW&&/^00/.test(code)&&window.etfNote){L=etfNote(code,nm);kind="etf"}
+  if(!L&&isTW&&I&&window.IND_NOTE&&IND_NOTE[I.i]){const n=IND_NOTE[I.i];L={v:"",s:n[0],w:n[1]};kind="ind"}
+  if(!L&&!(isTW&&I))return "";
+  let who="";
+  if(isTW&&I&&(I.c||I.g)){who=`<div class="ldceo"><span class="ic">👤</span><div><b>${I.c?(EN?"Chair ":"董事長 ")+e(I.c):""}${I.c&&I.g?"　":""}${I.g?(EN?"President ":"總經理 ")+e(I.g):""}</b><p>${EN?"From the official TWSE/TPEx company register, updated daily.":"來自證交所／櫃買中心的官方公司資料，每天自動更新。"}${L&&L.ceo?"<br>"+e(L.ceo[1]):""}</p></div></div>`}
+  else if(isTW&&kind==="etf"){who=`<div class="ldceo"><span class="ic">🧺</span><div><b>${EN?"ETF (no CEO)":"ETF（不是公司，沒有執行長）"}</b><p>${EN?"Managed by an asset manager following index rules.":"由投信公司照指數規則管理，買它等於一次買一籃子股票。"}</p></div></div>`}
+  else if(L&&L.ceo){const chk=window.USCEO&&USCEO[code];const diff=chk&&!L.ceo[0].toLowerCase().includes(String(chk).split(" ").slice(-1)[0].toLowerCase());
+    who=`<div class="ldceo"><span class="ic">👤</span><div><b>${e(L.ceo[0])}</b><p>${e(L.ceo[1])}</p>${diff?`<p class="ldwarn">⚠️ ${EN?"Public database now lists:":"公開資料庫最新紀錄的執行長是："} <b>${e(chk)}</b>${EN?" — leadership may have changed.":"，可能已經換人，請以公司公告為準。"}</p>`:""}</div></div>`}
+  const tag=kind==="ind"?`<p class="ldtag">🏭 ${EN?`Industry-wide notes (${e(I.i)}), not specific to this company`:`以下是「${e(I.i)}」產業共通的重點，不是這家公司專屬的分析`}</p>`:kind==="etf"?`<p class="ldtag">🧺 ${EN?"How this ETF works":"這檔 ETF 的投資方式"}</p>`:"";
+  const body=`${who}${tag}
+    ${L&&L.v?`<div class="ldrow"><span class="ic">🔭</span><div><b>${EN?"Vision":"遠見"}</b><p>${e(L.v)}</p></div></div>`:""}
+    ${L&&L.s&&L.s.length?`<div class="ldrow"><span class="ic">♟️</span><div><b>${kind==="ind"?(EN?"Common strategies":"產業常見策略"):(EN?"Strategy":"策略重點")}</b><ul>${L.s.map(x=>`<li>${e(x)}</li>`).join("")}</ul></div></div>`:""}
+    ${L&&L.w&&L.w.length?`<div class="ldrow"><span class="ic">⚠️</span><div><b>${kind==="ind"?(EN?"Common risks":"產業常見風險"):(EN?"Watch out for":"要注意")}</b><ul>${L.w.map(x=>`<li>${e(x)}</li>`).join("")}</ul></div></div>`:""}
+    <p class="sub" style="margin:2px 0 0">${kind==="own"?(EN?"Compiled ":"資料整理於 ")+window.LEADERS_ASOF+(EN?"; leadership can change.":"，人事可能變動，以公司公告為準。"):(EN?"Leaders come from official data; notes are general.":"領導人來自官方資料；說明為一般性整理。")}</p>`;
+  if(inner)return body;
+  return `<h3 class="ush">🧭 ${EN?"Vision, strategy & leadership":"公司遠見、策略和執行長"}</h3><div class="ldr2" data-lead="${e(code)}">${body}</div>`;
 };

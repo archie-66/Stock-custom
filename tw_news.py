@@ -52,7 +52,7 @@ def company_info():
             ind = pick(r, "產業別", "SecuritiesIndustryCode").zfill(2)
             info[code] = {"m": mk, "i": IND.get(ind, ""), "f": pick(r, "成立日期", "DateOfIncorporation")[:4],
                           "l": pick(r, "上市日期", "上櫃日期", "DateOfListing")[:4], "c": pick(r, "董事長", "Chairman"),
-                          "cap": pick(r, "實收資本額", "Paidin.Capital.NTDollars", "PaidInCapital"), "w": pick(r, "網址", "WebAddress"),
+                          "g": pick(r, "總經理", "GeneralManager"), "cap": pick(r, "實收資本額", "Paidin.Capital.NTDollars", "PaidInCapital"), "w": pick(r, "網址", "WebAddress"),
                           "fn": pick(r, "公司名稱", "CompanyName")}
         print(url[:40], len(rows))
     return info
