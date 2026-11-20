@@ -3,7 +3,7 @@
 (function(){
 var NEWS=[
   {v:"2026-11-20c",date:"11/20",items:[
-    ["🧭","全部股票都有公司遠見和領導人","Vision & leaders for every stock","美股約 95 檔每一家都有執行長、遠見、策略和要注意的地方，執行長每天會用公開資料庫核對，換人會提醒。台股約 2,000 家的董事長和總經理直接用官方資料、每天更新；50 檔熱門股有專屬的遠見和策略，其他公司顯示所屬產業的共通重點，ETF 會說明它的投資方式。","Every US stock now has its CEO, vision, strategy and risks (CEOs checked daily). All ~2,000 Taiwan companies show their official chair and president, with tailored notes for 50 popular ones, industry-wide notes for the rest, and ETF explanations."]
+    ["🧭","全部股票都有公司遠見和領導人","Vision & leaders for every stock","美股約 95 檔每一家都有執行長、遠見、策略和要注意的地方，執行長名字都在 11/20 查證過。台股約 2,000 家的董事長和總經理直接用官方資料、每天更新；50 檔熱門股有專屬的遠見和策略，其他公司顯示所屬產業的共通重點，ETF 會說明它的投資方式。","Every US stock now has its CEO, vision, strategy and risks (CEOs verified on Nov 20). All ~2,000 Taiwan companies show their official chair and president, with tailored notes for 50 popular ones, industry-wide notes for the rest, and ETF explanations."]
   ]},
   {v:"2026-11-20b",date:"11/20",items:[
     ["🔮","預測直接告訴你答案","A clear call","預測頁每檔股票最上面會直接寫「偏漲／偏跌／看不出方向」、上漲機率，以及 5 天後大概的價格範圍。","Each stock now opens with a clear up/down call, a probability and a 5-day price range."],

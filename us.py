@@ -173,27 +173,6 @@ def news(tk, days=3):
     return out[:6]
 
 
-def wikidata_ceo(tickers):
-    """用 Wikidata 查美股公司目前的執行長，拿來核對網站上手寫的資料有沒有過時"""
-    vals = " ".join('"%s"' % t.replace("-", ".") for t in tickers)
-    q = """SELECT ?t ?ceoLabel WHERE { VALUES ?t { %s } VALUES ?ex { wd:Q82059 wd:Q13677 }
-      ?c p:P414 ?s . ?s ps:P414 ?ex ; pq:P249 ?t . ?c p:P169 ?cs . ?cs ps:P169 ?ceo .
-      FILTER NOT EXISTS { ?cs pq:P582 ?end } SERVICE wikibase:label { bd:serviceParam wikibase:language "en". } }""" % vals
-    try:
-        req = urllib.request.Request("https://query.wikidata.org/sparql?format=json&query=" + urllib.parse.quote(q),
-                                     headers={"User-Agent": "stock-custom-app/1.0 (personal project)", "Accept": "application/sparql-results+json"})
-        with urllib.request.urlopen(req, timeout=60) as r:
-            rows = json.loads(r.read().decode())["results"]["bindings"]
-    except Exception as e:
-        print("wikidata fail", e); return {}
-    out = {}
-    for b in rows:
-        t = b["t"]["value"].replace(".", "-"); n = b["ceoLabel"]["value"]
-        if n and not n.startswith("Q"):
-            out.setdefault(t, []).append(n)
-    return {k: " / ".join(sorted(set(v))) for k, v in out.items()}
-
-
 def main():
     data, names = {}, {}
     for key, (y, s, n) in INDEX.items():
@@ -222,9 +201,6 @@ def main():
         else:
             out["s"][k] = [names[k], "us", cs, vs, None]
     out["meta"] = {k: v for k, v in META.items() if k in out["s"]}
-    for k, n in wikidata_ceo(list(out["s"].keys())).items():
-        out["meta"].setdefault(k, {})["ceo"] = n
-    print("執行長核對：", sum(1 for v in out["meta"].values() if v.get("ceo")), "檔")
     json.dump(out, open("us.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     bulk_news()
     nw = {"updatedAt": out["updatedAt"], "n": {}}
