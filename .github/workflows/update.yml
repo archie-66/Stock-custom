@@ -57,11 +57,3 @@ jobs:
             git commit -q -m "更新預測歷史資料 $(TZ=Asia/Taipei date '+%F %H:%M')"
             git pull -q --rebase origin main && git push -q || echo "push 失敗"
           fi
-      - name: 台股公司資料和近三天新聞
-        run: |
-          python tw_news.py || true
-          if [ -n "$(git status --porcelain tw-news.json tw-info.json)" ]; then
-            git add tw-news.json tw-info.json
-            git commit -q -m "更新台股新聞 $(TZ=Asia/Taipei date '+%F %H:%M')"
-            for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push -q && break; sleep 5; done
-          fi

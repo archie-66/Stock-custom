@@ -1,0 +1,37 @@
+name: 更新台股新聞和公司資料
+
+on:
+  schedule:
+    # 台北時間 7:50、12:20、16:50、21:50（每天）
+    - cron: "50 23 * * *"
+    - cron: "20 4 * * *"
+    - cron: "50 8,13 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-tw-news
+  cancel-in-progress: false
+
+jobs:
+  news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 抓台股公司資料和近三天新聞
+        run: python tw_news.py
+      - name: 存檔
+        run: |
+          git config user.name "stock-bot"
+          git config user.email "stock-bot@users.noreply.github.com"
+          if [ -n "$(git status --porcelain tw-news.json tw-info.json)" ]; then
+            git add tw-news.json tw-info.json
+            git commit -q -m "更新台股新聞 $(TZ=Asia/Taipei date '+%F %H:%M')"
+            for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push -q && break; sleep 5; done
+          fi
