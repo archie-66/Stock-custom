@@ -2,6 +2,11 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-20b",date:"11/20",items:[
+    ["🔮","預測直接告訴你答案","A clear call","預測頁每檔股票最上面會直接寫「偏漲／偏跌／看不出方向」、上漲機率，以及 5 天後大概的價格範圍。","Each stock now opens with a clear up/down call, a probability and a 5-day price range."],
+    ["🎯","會自己學習的模型","A model that learns","用全部股票過去的資料，讓模型自己學每個方法該占多少比重，再用它沒看過的最近資料考試，誠實顯示命中率，也跟亂猜比較。","It learns how much each method should count from all stocks' history, then is tested on recent data it hasn't seen."],
+    ["🧭","公司遠見、策略和執行長","Vision, strategy & CEOs","熱門大公司（Anthropic、輝達、蘋果、微軟、台積電、鴻海、聯發科、台達電等）多了領導人介紹、公司遠見、策略重點和要注意的地方。","Major companies now include their leader, vision, strategy and risks."]
+  ]},
   {v:"2026-11-20",date:"11/20",items:[
     ["📰","台股也有新聞和分析","News & analysis for Taiwan stocks","在個股清單點開一檔股票，按「📰 新聞與分析」，會看到公司簡介（產業、成立和掛牌年份、董事長）、根據最近 60 天股價自動整理的重點（趨勢、跟其他股票比、高低位置、波動、法人、成交量），還有近三天的新聞標題。","Open a stock in the list and tap 📰 for a company profile, auto-generated highlights and the last 3 days of headlines."],
     ["🆕","美股加入 Anthropic（ANT）","Anthropic (ANT) added","新上市的 Anthropic 也會出現在美股排行和搜尋裡，第一天的股價和新聞會一起更新。","Newly listed Anthropic now appears in US rankings and search, with its first prices and news."]

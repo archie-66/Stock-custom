@@ -147,6 +147,57 @@ function market(){
   const v=verdict(F);v.F=F;return v;
 }
 
+
+/* ---------- 學習模型：用全部股票過去的資料，學每個方法該占多少比重（邏輯迴歸），再用它沒看過的最近資料考試 ---------- */
+const KEYS=["trend","cross","mom","rs","rsi","vol","inst"];
+const MODEL={tw:null,us:null};let training=false;
+const sig=z=>1/(1+Math.exp(-z));
+function vec(F){return [1,...KEYS.map(k=>{const f=F.find(x=>x.k===k);return f?f.s/2:0})]}
+function predictP(w,x){return sig(w.reduce((a,wi,i)=>a+wi*x[i],0))}
+function fit(X,Y,iters){const n=X.length,d=X[0].length,w=new Array(d).fill(0);
+  for(let it=0;it<iters;it++){const g=new Array(d).fill(0);for(let i=0;i<n;i++){const e=predictP(w,X[i])-Y[i],x=X[i];for(let j=0;j<d;j++)g[j]+=e*x[j]}
+    for(let j=0;j<d;j++)w[j]-=1.2*(g[j]/n+(j?0.002*w[j]:0))}return w}
+function trainModel(done){
+  const mk=MK,D=H;if(!D||training)return;const key="tw_model_"+mk;
+  try{const c=JSON.parse(localStorage.getItem(key));if(c&&c.upd===D.updatedAt){MODEL[mk]=c;done&&done();return}}catch(e){}
+  training=true;const codes=Object.keys(D.s),X=[],Y=[],T=[];let i=0;
+  const cutIdx=Math.floor(D.dates.length*0.75),cut=D.dates[cutIdx];
+  (function step(){
+    const end=Math.min(codes.length,i+80);
+    for(;i<end;i++){const S=series(codes[i]);if(!S||S.c.length<32)continue;
+      for(let t=25;t+5<S.c.length;t+=1){const fut=S.c[t+5]/S.c[t]-1;if(fut===0)continue;X.push(vec(factors(S,t,false)));Y.push(fut>0?1:0);T.push(S.d[t]<cut?0:1)}}
+    if(i<codes.length){setTimeout(step,0);return}
+    const tr=[],te=[];X.forEach((x,k)=>(T[k]?te:tr).push(k));
+    let res={upd:D.updatedAt,n:X.length,acc:null,base:null,nTest:te.length};
+    if(tr.length>200&&te.length>100){
+      const w0=fit(tr.map(k=>X[k]),tr.map(k=>Y[k]),120);
+      let hit=0,ups=0,cN=0,cHit=0;te.forEach(k=>{const p=predictP(w0,X[k]);if((p>.5)===(Y[k]===1))hit++;ups+=Y[k];if(Math.abs(p-.5)>=.05){cN++;if((p>.5)===(Y[k]===1))cHit++}});
+      res.acc=hit/te.length;res.base=Math.max(ups,te.length-ups)/te.length;res.cAcc=cN?cHit/cN:null;res.cN=cN;
+      res.w=fit(X,Y,120);
+    }
+    MODEL[mk]=res;training=false;try{localStorage.setItem(key,JSON.stringify(res))}catch(e){}
+    if(mk===MK)done&&done();
+  })();
+}
+function callHTML(S,t,F){
+  const M=MODEL[MK];
+  if(!M)return `<div class="pdcall flat"><div class="sub">🔮 ${tt("我的預測","My call")}</div><div style="display:flex;align-items:center;gap:10px">${window.loaderHTML?loaderHTML(true):""}<span>${tt("正在用全部股票的歷史資料訓練模型…","Training on all stocks' history…")}</span></div></div>`;
+  if(!M.w)return "";
+  const p=predictP(M.w,vec(F)),up=p>=.55,dn=p<=.45,cl=up?"up":dn?"down":"flat";
+  const word=up?tt("📈 偏漲","📈 Leaning up"):dn?tt("📉 偏跌","📉 Leaning down"):tt("🤷 看不出方向","🤷 No clear direction");
+  const rr=[];for(let i=Math.max(1,t-19);i<=t;i++)rr.push(Math.log(S.c[i]/S.c[i-1]));const mu=avg(rr),sd=Math.sqrt(avg(rr.map(x=>(x-mu)**2)))*Math.sqrt(5);
+  const lo=S.c[t]*Math.exp(-sd),hi=S.c[t]*Math.exp(sd),cur=isUS()?"$":"";
+  const edge=M.acc!=null?M.acc-M.base:null;
+  const grade=edge==null?"":edge>=.03?tt("比亂猜好一些","a bit better than guessing"):edge>0?tt("只比亂猜好一點點","barely better than guessing"):tt("沒有比亂猜好","no better than guessing");
+  return `<div class="pdcall ${cl}">
+    <div class="sub">🔮 ${tt("我的預測：接下來 5 個交易日","My call: next 5 trading days")}</div>
+    <div class="pdcw">${word}</div>
+    <div class="pdpb"><span>${tt("上漲機率","Chance of rising")}</span><div class="bar"><i style="width:${(p*100).toFixed(0)}%"></i><em style="left:50%"></em></div><b>${fmt(p*100,0)}%</b></div>
+    <div class="pdrg">${tt("可能的價格範圍（大約 3 次有 2 次會落在這裡）","Likely range (about 2 in 3 chance)")}<br><b>${cur}${fmt(lo)} ～ ${cur}${fmt(hi)}</b></div>
+    ${M.acc!=null?`<div class="pdex">📝 ${tt(`模型考試成績：用最近它沒看過的 ${M.nTest.toLocaleString()} 筆資料測試，猜對 <b>${fmt(M.acc*100,0)}%</b>；每次都猜比較常發生的那一邊是 ${fmt(M.base*100,0)}%。結論：<b>${grade}</b>。`,`Test score on ${M.nTest.toLocaleString()} unseen cases: <b>${fmt(M.acc*100,0)}%</b> right vs ${fmt(M.base*100,0)}% for always guessing the common side: <b>${grade}</b>.`)}${M.cAcc!=null&&M.cN>50?tt(` 只看模型比較有把握（機率離 50% 至少 5 個百分點）的時候：猜對 ${fmt(M.cAcc*100,0)}%。`,` When it's more confident: ${fmt(M.cAcc*100,0)}%.`):""}</div>`:""}
+  </div>`;
+}
+
 /* ---------- 回測：用過去的資料，看這套分數準不準 ---------- */
 function backtest(S){
   let n=0,hit=0,ups=0,tot=0;const H5=5;
@@ -255,7 +306,9 @@ function renderStock(){
   box.innerHTML=`<h2>${esc(isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n)} <span class="sub">${code}${S.m==="o"?tt(" · 上櫃"," · OTC"):isUS()?tt(" · 美股"," · US"):""}</span></h2>
     <div class="pdprice"><b>${isUS()?"$":""}${fmt(S.c[t])}</b> <span class="${chg>0?"up":chg<0?"down":"flat"}">${pct(chg)}</span> <span class="sub">${S.d[t].slice(5).replace("-","/")} ${tt("收盤","close")}</span></div>
     ${spark(S)}
-    <div class="sub" style="margin-top:8px">${tt("接下來 5 個交易日","Next 5 trading days")}</div>${summary(V,F,confOf(V,B))}
+    ${callHTML(S,t,F)}
+    ${window.leadersHTML&&leadersHTML(code)?`<details class="pdlead"><summary>🧭 ${tt("公司遠見、策略和執行長","Vision, strategy & leadership")}</summary>${leadersHTML(code)}</details>`:""}
+    <div class="sub" style="margin-top:10px">${tt("各方法的分數（模型的根據）","Scores by method (what the model uses)")}</div>${summary(V,F,confOf(V,B))}
     <div class="pdhead"><div>${gauge(V.score,V.cl)}</div><div>
       <div class="sub">${tt("分數","Score")} <b class="${V.cl}">${V.score>0?"+":""}${V.score}</b>／100<br>${tt(`${F.length} 個方法裡有 ${Math.round(V.agree*F.length)} 個同方向`,`${Math.round(V.agree*F.length)} of ${F.length} methods agree`)}</div></div></div>
     <p class="hint">${tt("點每一項可以看說明和根據。","Tap each item for the reason and where it comes from.")}</p>
@@ -266,7 +319,7 @@ function renderStock(){
         :`<div class="pdbtn"><button data-g="1" class="up">${tt("📈 漲","📈 Up")}</button><button data-g="-1" class="down">${tt("📉 跌","📉 Down")}</button></div>`}
     </div>`;
   box.querySelectorAll(".pdbtn button").forEach(b=>b.onclick=()=>{
-    const P=loadP();P.push({m:MK,c:code,n:isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n,d:S.d[t],px:S.c[t],me:+b.dataset.g,model:Math.sign(V.score)||0,res:null});saveP(P);renderStock();renderLog();
+    const P=loadP();P.push({m:MK,c:code,n:isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n,d:S.d[t],px:S.c[t],me:+b.dataset.g,model:(MODEL[MK]&&MODEL[MK].w?(p=>p>=.55?1:p<=.45?-1:0)(predictP(MODEL[MK].w,vec(F))):Math.sign(V.score))||0,res:null});saveP(P);renderStock();renderLog();
   });
   setTimeout(()=>box.querySelectorAll(".pdn").forEach(n=>n.classList.add("go")),60);
 }
@@ -293,6 +346,7 @@ async function ensure(){
   $("pdInfo").textContent=tt(`${isUS()?"美股":"台股"}歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔 · 更新 ${H.updatedAt||""}`,`History: ${H.dates.length} trading days, ${Object.keys(H.s).length} stocks · updated ${H.updatedAt||""}`);
   if(!code||!H.s[code]){const L=pickList();code=L.length?L[0][0]:null}
   renderMarket();renderPicks();renderStock();renderLog();renderRank();syncMk();
+  if(!MODEL[MK])trainModel(()=>renderStock());
 }
 document.addEventListener("click",e=>{const b=e.target.closest(".pdlearn,.pdtile");if(!b)return;e.preventDefault();window.openLesson&&openLesson(b.dataset.l)});
 /* 小教室示範：用目前選的股票真的數字 */
@@ -336,7 +390,7 @@ function renderRank(){
 function syncMk(){document.querySelectorAll("#pdMk button").forEach(b=>b.classList.toggle("on",b.dataset.m===MK))}
 function setMarket(m){if(m===MK)return;CODE[MK]=code;MK=m;H=CACHE[m];code=CODE[m];rankCache=null;medCache={};syncMk();
   $("pdSug").innerHTML="";$("pdQ").value="";$("pdQ").placeholder=m==="us"?tt("搜尋美股代號或名稱（例如 ANT、輝達）","Search US ticker or name"):tt("搜尋股票代號或名稱","Search code or name");
-  renderMarket();if(H){if(!code||!H.s[code]){const L=pickList();code=L.length?L[0][0]:null}$("pdInfo").textContent=tt(`${m==="us"?"美股":"台股"}歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔 · 更新 ${H.updatedAt||""}`,`${H.dates.length} days, ${Object.keys(H.s).length} stocks`);renderPicks();renderStock();renderLog();renderRank()}else ensure()}
+  renderMarket();if(H){if(!code||!H.s[code]){const L=pickList();code=L.length?L[0][0]:null}$("pdInfo").textContent=tt(`${m==="us"?"美股":"台股"}歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔 · 更新 ${H.updatedAt||""}`,`${H.dates.length} days, ${Object.keys(H.s).length} stocks`);renderPicks();renderStock();renderLog();renderRank();if(!MODEL[MK])trainModel(()=>renderStock())}else ensure()}
 document.addEventListener("click",e=>{const b=e.target.closest("#pdMk button");if(b)setMarket(b.dataset.m)});
 window.predictOpen=function(m,c){setMarket(m);if(c){CODE[m]=c;if(H&&H.s[c]){code=c;renderPicks();renderStock()}else code=c}};
 window.predictRender=function(){

@@ -85,6 +85,7 @@ function body(c){
     ${INTRO[c]?`<p class="usinfo">${esc(INTRO[c])}</p>`:""}${meta?`<p class="usinfo sub" style="margin-top:4px">${meta}</p>`:""}
     ${!INTRO[c]&&!meta?`<p class="sub">${INFO?tt("這檔沒有公司基本資料（可能是 ETF 或特殊股票）。","No company profile (may be an ETF).") :tt("讀取中…","Loading…")}</p>`:""}
     ${I&&I.w?`<p class="sub" style="margin:4px 0 0"><a href="${esc(/^https?:/.test(I.w)?I.w:"https://"+I.w)}" target="_blank" rel="noopener">🌐 ${tt("公司網站","Website")}</a></p>`:""}
+    ${window.leadersHTML?leadersHTML(c):""}
     <h3 class="ush">🧠 ${tt("簡短分析","Quick analysis")}</h3>
     ${A?`<div class="usan">${A.map(x=>`<div><span>${x[0]}</span><p>${x[1]}</p></div>`).join("")}</div><p class="sub" style="margin:4px 0 0">${tt("用最近 60 天股價自動整理的重點，不是買賣建議。","Auto-generated from 60 days of prices. Not advice.")}</p>`
       :`<p class="sub">${H?tt("這檔成交量比較小，沒有收錄歷史資料，所以沒辦法分析。","Not enough history for this stock."):tt("讀取中…","Loading…")}</p>`}

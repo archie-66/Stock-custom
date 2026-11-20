@@ -76,6 +76,7 @@ function renderSel(){
       <div class="stat"><div class="sub">${ipo?tt("比承銷價","vs IPO price"):tt("今天成交量","Volume today")}</div><b>${ipo?`<span class="${cl(I.c-ipo.px)}">${pct((I.c/ipo.px-1)*100)}</span>`:vs?fmt(vs,1)+tt(" 倍平常"," × normal"):"—"}</b></div></div>
     ${I.days<22?`<p class="hint">${tt(`這檔目前只有 ${I.days} 天的資料，預測分析需要至少 22 天。`,`Only ${I.days} day(s) of data; prediction needs 22.`)}</p>`:""}
     ${window.US_INFO&&US_INFO[sel]?`<h3 class="ush">📖 ${tt("公司簡介","About")}</h3><p class="usinfo"><span class="ustag">${esc(US_INFO[sel][0])}</span>${esc(US_INFO[sel][1])}</p>`:""}
+    ${window.leadersHTML?leadersHTML(sel):""}
     <h3 class="ush">🧠 ${tt("簡短分析","Quick analysis")}</h3>
     <div class="usan">${analysis(sel,I).map(x=>`<div><span>${x[0]}</span><p>${x[1]}</p></div>`).join("")}</div>
     <p class="sub" style="margin:4px 0 0">${tt("以上是用最近 60 天股價自動整理的重點，不是買賣建議。","Auto-generated from the last 60 days of prices. Not advice.")}</p>
