@@ -1,0 +1,32 @@
+name: 重建預測用的歷史資料
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-hist
+  cancel-in-progress: false
+
+jobs:
+  hist:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 一次補齊 60 個交易日（含開盤、最高、最低）
+        run: BACKFILL=90 python hist.py
+      - name: 存檔
+        run: |
+          git config user.name "stock-bot"
+          git config user.email "stock-bot@users.noreply.github.com"
+          if [ -n "$(git status --porcelain hist.json)" ]; then
+            git add hist.json
+            git commit -q -m "重建預測歷史資料（含 K 線） $(TZ=Asia/Taipei date '+%F %H:%M')"
+            for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push -q && break; sleep 5; done
+          fi

@@ -25,6 +25,7 @@ def day_twse(dt):
     out = {}
     for (title, f, data) in tables(mi):
         ic, icl, ish, iam, iname = col(f, "證券代號"), col(f, "收盤價"), col(f, "成交股數"), col(f, "成交金額"), col(f, "證券名稱")
+        io, ih, il = col(f, "開盤價"), col(f, "最高價"), col(f, "最低價")
         if ic is None or icl is None:
             continue
         for x in data:
@@ -32,7 +33,8 @@ def day_twse(dt):
             if c is None:
                 continue
             out[str(x[ic]).strip()] = [c, int((num(x[ish]) or 0) / 1000), str(x[iname]).strip() if iname is not None else "",
-                                       round((num(x[iam]) or 0) / 1e8, 2) if iam is not None else 0]
+                                       round((num(x[iam]) or 0) / 1e8, 2) if iam is not None else 0,
+                                       num(x[io]) if io is not None else None, num(x[ih]) if ih is not None else None, num(x[il]) if il is not None else None]
     return out
 
 
@@ -46,12 +48,13 @@ def day_otc(dt):
         if len(x) >= 10:
             c = num(x[2])
             if c is not None:
-                out[str(x[0]).strip()] = [c, int((num(x[8]) or 0) / 1000), str(x[1]).strip(), round((num(x[9]) or 0) / 1e8, 2)]
+                out[str(x[0]).strip()] = [c, int((num(x[8]) or 0) / 1000), str(x[1]).strip(), round((num(x[9]) or 0) / 1e8, 2), num(x[4]), num(x[5]), num(x[6])]
     if out:
         return out
     js = get(f"https://www.tpex.org.tw/www/zh-tw/afterTrading/otc?date={dt.year}%2F{dt.month:02d}%2F{dt.day:02d}&type=EW&id=&response=json")
     for (title, f, data) in tables(js):
         ic, icl, ish, iam, iname = col(f, "代號"), col(f, "收盤"), col(f, "成交股數"), col(f, "成交金額"), col(f, "名稱")
+        io, ih, il = col(f, "開盤"), col(f, "最高"), col(f, "最低")
         if ic is None or icl is None:
             continue
         for x in data:
@@ -59,7 +62,8 @@ def day_otc(dt):
             if c is not None:
                 out[str(x[ic]).strip()] = [c, int((num(x[ish]) if ish is not None else 0) or 0) // 1000,
                                            str(x[iname]).strip() if iname is not None else "",
-                                           round(((num(x[iam]) if iam is not None else 0) or 0) / 1e8, 2)]
+                                           round(((num(x[iam]) if iam is not None else 0) or 0) / 1e8, 2),
+                                           num(x[io]) if io is not None else None, num(x[ih]) if ih is not None else None, num(x[il]) if il is not None else None]
     return out
 
 
@@ -89,9 +93,13 @@ def main():
     try:  # 讀進緊湊格式，轉回 {日期: 值}
         old = json.load(open(FILE, encoding="utf-8"))
         H["dates"], H["skip"] = old.get("dates", []), old.get("skip", [])
-        for code, (n, m, cs, vs, fs) in old.get("s", {}).items():
+        if old.get("ver") != 2:  # 舊格式沒有開高低，重新抓一次
+            raise ValueError("舊版歷史檔，重新建立（加入開盤、最高、最低）")
+        for code, row in old.get("s", {}).items():
+            n, m, cs, vs, fs = row[:5]
+            os_, hs, ls = (row[5:8] + [None, None, None])[:3]
             z = lambda arr: {d: x for d, x in zip(H["dates"], arr or []) if x is not None}
-            H["s"][code] = {"n": n, "m": m, "c": z(cs), "v": z(vs), "f": z(fs)}
+            H["s"][code] = {"n": n, "m": m, "c": z(cs), "v": z(vs), "f": z(fs), "o": z(os_), "h": z(hs), "l": z(ls)}
     except Exception as e:
         print("新的歷史檔", e)
     # H["s"][code] = {"n": 名稱, "m": "o"/"", "c": {date: 收盤}, "v": {date: 張}, "f": {date: 外資+投信張}}
@@ -131,10 +139,13 @@ def main():
         for code, v, mk in both:
             if code not in keep:
                 continue
-            e = H["s"].setdefault(code, {"n": v[2], "m": mk, "c": {}, "v": {}, "f": {}})
+            e = H["s"].setdefault(code, {"n": v[2], "m": mk, "c": {}, "v": {}, "f": {}, "o": {}, "h": {}, "l": {}})
             if v[2]:
                 e["n"] = v[2]
             e["c"][ds] = v[0]; e["v"][ds] = v[1]
+            for j, kk in ((4, "o"), (5, "h"), (6, "l")):
+                if len(v) > j and v[j] is not None:
+                    e.setdefault(kk, {})[ds] = v[j]
             if code in inst:
                 e["f"][ds] = inst[code]
         H["dates"].append(ds); changed = True
@@ -160,7 +171,8 @@ def main():
     H["skip"] = sorted(set(H["skip"]))[-80:]
     for code in list(H["s"].keys()):
         e = H["s"][code]
-        for k in ("c", "v", "f"):
+        for k in ("c", "v", "f", "o", "h", "l"):
+            e.setdefault(k, {})
             e[k] = {d: x for d, x in e[k].items() if d in keepd}
         if not e["c"]:
             del H["s"][code]
@@ -171,7 +183,11 @@ def main():
         out["s"][code] = [e["n"], e["m"],
                           [e["c"].get(d) for d in H["dates"]],
                           [e["v"].get(d) for d in H["dates"]],
-                          [e["f"].get(d) for d in H["dates"]] if e["f"] else None]
+                          [e["f"].get(d) for d in H["dates"]] if e["f"] else None,
+                          [e.get("o", {}).get(d) for d in H["dates"]],
+                          [e.get("h", {}).get(d) for d in H["dates"]],
+                          [e.get("l", {}).get(d) for d in H["dates"]]]
+    out["ver"] = 2
     json.dump(out, open(FILE, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     print("歷史資料：", len(H["dates"]), "天，", len(H["s"]), "檔")
     return 0

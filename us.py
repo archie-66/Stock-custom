@@ -45,11 +45,12 @@ def yahoo(sym):
             if c is None:
                 continue
             d = datetime.fromtimestamp(s, timezone(timedelta(hours=-5))).strftime("%Y-%m-%d")
-            rows.append((d, round(c, 2), int(q["volume"][i] or 0)))
+            g = lambda kk: (round(q[kk][i], 2) if q.get(kk) and q[kk][i] is not None else None)
+            rows.append((d, round(c, 2), int(q["volume"][i] or 0), g("open"), g("high"), g("low")))
         # 剛上市的股票，日線有時還沒有資料：改用「最新成交價」補當天
         if not rows and mt.get("regularMarketPrice") and mt.get("regularMarketTime"):
             d = datetime.fromtimestamp(mt["regularMarketTime"], timezone(timedelta(hours=-5))).strftime("%Y-%m-%d")
-            rows.append((d, round(mt["regularMarketPrice"], 2), int(mt.get("regularMarketVolume") or 0)))
+            rows.append((d, round(mt["regularMarketPrice"], 2), int(mt.get("regularMarketVolume") or 0), None, mt.get("regularMarketDayHigh"), mt.get("regularMarketDayLow")))
         return name, rows
     except Exception:
         return None, []
@@ -61,10 +62,10 @@ def yahoo_short(sym):
     try:
         r = json.loads(t)["chart"]["result"][0]; mt = r["meta"]
         ts, q = r.get("timestamp") or [], r["indicators"]["quote"][0]
-        rows = [(datetime.fromtimestamp(s, timezone(timedelta(hours=-5))).strftime("%Y-%m-%d"), round(q["close"][i], 2), int(q["volume"][i] or 0))
+        rows = [(datetime.fromtimestamp(s, timezone(timedelta(hours=-5))).strftime("%Y-%m-%d"), round(q["close"][i], 2), int(q["volume"][i] or 0), (round(q["open"][i], 2) if q.get("open") and q["open"][i] is not None else None), (round(q["high"][i], 2) if q.get("high") and q["high"][i] is not None else None), (round(q["low"][i], 2) if q.get("low") and q["low"][i] is not None else None))
                 for i, s in enumerate(ts) if q["close"][i] is not None]
         if not rows and mt.get("regularMarketPrice") and mt.get("regularMarketTime"):
-            rows = [(datetime.fromtimestamp(mt["regularMarketTime"], timezone(timedelta(hours=-5))).strftime("%Y-%m-%d"), round(mt["regularMarketPrice"], 2), int(mt.get("regularMarketVolume") or 0))]
+            rows = [(datetime.fromtimestamp(mt["regularMarketTime"], timezone(timedelta(hours=-5))).strftime("%Y-%m-%d"), round(mt["regularMarketPrice"], 2), int(mt.get("regularMarketVolume") or 0), None, mt.get("regularMarketDayHigh"), mt.get("regularMarketDayLow"))]
         META.setdefault(sym, {"ln": mt.get("longName") or sym, "hi": mt.get("fiftyTwoWeekHigh"), "lo": mt.get("fiftyTwoWeekLow"), "ex": mt.get("fullExchangeName")})
         return mt.get("shortName") or mt.get("longName"), rows
     except Exception:
@@ -77,7 +78,8 @@ def stooq(sym):
     try:
         for x in csv.DictReader(io.StringIO(t or "")):
             if x.get("Close") not in (None, "", "N/D"):
-                rows.append((x["Date"], round(float(x["Close"]), 2), int(float(x.get("Volume") or 0))))
+                f2 = lambda kk: (round(float(x[kk]), 2) if x.get(kk) not in (None, "", "N/D") else None)
+                rows.append((x["Date"], round(float(x["Close"]), 2), int(float(x.get("Volume") or 0)), f2("Open"), f2("High"), f2("Low")))
     except Exception:
         pass
     return rows[-130:]
@@ -191,15 +193,19 @@ def main():
     dates = sorted({r[0] for rows in data.values() for r in rows[-KEEP - 5:]})[-KEEP:]
     out = {"dates": dates, "updatedAt": datetime.now(TW).strftime("%Y-%m-%d %H:%M"), "idx": {}, "s": {}}
     for k, rows in data.items():
-        m = {d: (c, v) for d, c, v in rows}
-        cs = [m.get(d, (None, None))[0] for d in dates]
-        vs = [m.get(d, (None, None))[1] for d in dates]
+        m = {r[0]: r[1:] for r in rows}
+        E = (None, None, None, None, None)
+        cs = [m.get(d, E)[0] for d in dates]
+        vs = [m.get(d, E)[1] for d in dates]
+        os_ = [(m.get(d, E) + E)[2] for d in dates]
+        hs = [(m.get(d, E) + E)[3] for d in dates]
+        ls = [(m.get(d, E) + E)[4] for d in dates]
         if all(c is None for c in cs):
             continue
         if k.startswith("^"):
             out["idx"][k[1:]] = [names[k], cs]
         else:
-            out["s"][k] = [names[k], "us", cs, vs, None]
+            out["s"][k] = [names[k], "us", cs, vs, None, os_, hs, ls]
     out["meta"] = {k: v for k, v in META.items() if k in out["s"]}
     json.dump(out, open("us.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     bulk_news()
