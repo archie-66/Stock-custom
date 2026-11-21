@@ -92,9 +92,9 @@ def main():
     H = {"dates": [], "skip": [], "s": {}}
     try:  # 讀進緊湊格式，轉回 {日期: 值}
         old = json.load(open(FILE, encoding="utf-8"))
-        H["dates"], H["skip"] = old.get("dates", []), old.get("skip", [])
-        if old.get("ver") != 2:  # 舊格式沒有開高低，重新抓一次
+        if old.get("ver") != 2:  # 舊格式沒有開高低，全部重新抓一次
             raise ValueError("舊版歷史檔，重新建立（加入開盤、最高、最低）")
+        H["dates"], H["skip"] = old.get("dates", []), old.get("skip", [])
         for code, row in old.get("s", {}).items():
             n, m, cs, vs, fs = row[:5]
             os_, hs, ls = (row[5:8] + [None, None, None])[:3]
@@ -163,6 +163,9 @@ def main():
                     e["f"][ds] = inst[code]
             changed = True
 
+    if not any(e["c"] for e in H["s"].values()):
+        print("沒有抓到任何股票，不覆蓋舊檔")
+        return 0
     if not changed:
         print("歷史資料不用更新")
         return 0
