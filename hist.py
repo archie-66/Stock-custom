@@ -121,6 +121,7 @@ def main():
         todo.insert(0, t0)
 
     changed = False
+    DAYS, KEEPSET = [], set()
     for dt in todo:
         ds = dt.strftime("%Y-%m-%d")
         tw = day_twse(dt); time.sleep(3)
@@ -132,11 +133,17 @@ def main():
         ot = day_otc(dt); time.sleep(3)
         inst = day_inst(dt); time.sleep(3)
         print(ds, "上市", len(tw), "上櫃", len(ot), "法人", len(inst))
-        # 選股：當天成交金額前 TOP 名 + 已經在追蹤的
-        both = [(k, v, "") for k, v in tw.items()] + [(k, v, "o") for k, v in ot.items()]
+        both = [(k, v, "o" if k in ot and k not in tw else "") for k, v in {**ot, **tw}.items()]
+        DAYS.append((ds, both, inst))
+        # 選股：每天成交金額前 TOP 名都追蹤
         ranked = sorted(both, key=lambda z: -(z[1][3] or 0))
-        keep = {z[0] for z in ranked[:TOP]} | set(H["s"].keys())
+        KEEPSET.update(z[0] for z in ranked[:TOP])
+        H["dates"].append(ds); changed = True
+    # 全部日子抓完再填，這樣新加入追蹤的股票每一天都有資料
+    KEEPSET.update(H["s"].keys())
+    for ds, both, inst in DAYS:
         for code, v, mk in both:
+            keep = KEEPSET
             if code not in keep:
                 continue
             e = H["s"].setdefault(code, {"n": v[2], "m": mk, "c": {}, "v": {}, "f": {}, "o": {}, "h": {}, "l": {}})
@@ -148,7 +155,6 @@ def main():
                     e.setdefault(kk, {})[ds] = v[j]
             if code in inst:
                 e["f"][ds] = inst[code]
-        H["dates"].append(ds); changed = True
 
     # 法人資料有時比收盤行情晚公布：最近 3 天如果還沒有，就再補抓一次
     for ds in sorted(H["dates"])[-3:]:
