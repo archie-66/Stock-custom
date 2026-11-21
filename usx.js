@@ -71,10 +71,11 @@ function renderSel(){
   const ipo=IPO[sel];
   box.innerHTML=`<h2>${esc(I.n)} <span class="sub">${sel}${I.n!==I.en?" · "+esc(I.en):""}</span></h2>
     <div class="pdprice"><b>$${fmt(I.c)}</b> <span class="${cl(I.ch)}">${pct(I.ch)}</span> <span class="sub">${I.date.slice(5).replace("-","/")} ${tt("收盤（美國時間）","close (US)")}</span></div>
-    ${spark(I.cs,320,90).replace('class="usp','class="usp big')}
+    ${window.klineHTML?klineHTML("usKl"):spark(I.cs,320,90).replace('class="usp','class="usp big')}
     <div class="grid"><div class="stat"><div class="sub">${tt("近 20 天","Last 20 days")}</div><b class="${cl(I.r20)}">${pct(I.r20)}</b></div>
       <div class="stat"><div class="sub">${ipo?tt("比承銷價","vs IPO price"):tt("今天成交量","Volume today")}</div><b>${ipo?`<span class="${cl(I.c-ipo.px)}">${pct((I.c/ipo.px-1)*100)}</span>`:vs?fmt(vs,1)+tt(" 倍平常"," × normal"):"—"}</b></div></div>
     ${I.days<22?`<p class="hint">${tt(`這檔目前只有 ${I.days} 天的資料，預測分析需要至少 22 天。`,`Only ${I.days} day(s) of data; prediction needs 22.`)}</p>`:""}
+    <h3 class="ush">🔮 ${tt("個股預測","Prediction")}</h3><div id="usPc">${window.loaderHTML?`<div style="display:flex;justify-content:center;padding:8px">${loaderHTML(true)}</div>`:""}</div>
     ${window.US_INFO&&US_INFO[sel]?`<h3 class="ush">📖 ${tt("公司簡介","About")}</h3><p class="usinfo"><span class="ustag">${esc(US_INFO[sel][0])}</span>${esc(US_INFO[sel][1])}</p>`:""}
     ${window.leadersHTML?leadersHTML(sel):""}
     <h3 class="ush">🧠 ${tt("簡短分析","Quick analysis")}</h3>
@@ -85,6 +86,8 @@ function renderSel(){
     <div class="usbtns"><button class="btn ghost" id="usWatch">${on?tt("★ 已加入自選","★ In favorites"):tt("⭐ 加入自選","⭐ Add to favorites")}</button><button class="btn" id="usPred">${tt("🔮 看預測分析","🔮 Prediction")}</button></div>`;
   $("usWatch").onclick=()=>{let W=watch();W=W.includes(sel)?W.filter(x=>x!==sel):[sel,...W];setWatch(W);renderSel();if(sortBy==="watch")renderList()};
   $("usPred").onclick=()=>{if(window.predictOpen)predictOpen("us",sel);if(window.goPage)goPage(7)};
+  if(window.drawKline)drawKline("usKl",klineSeries(U,sel),{cur:"$"});
+  if(window.predictCard)predictCard("us",sel,"usPc");
 }
 function pick(k){sel=k;renderSel();const el=$("usSel");if(el)el.scrollIntoView({behavior:"smooth",block:"start"})}
 function search(q){q=q.trim().toLowerCase();const box=$("usSug");if(!q||!U){box.innerHTML="";return}
@@ -94,7 +97,7 @@ function search(q){q=q.trim().toLowerCase();const box=$("usSug");if(!q||!U){box.
 async function load(){
   if(U||loading)return;loading=true;
   if(window.loaderHTML)$("usIdx").innerHTML=`<div style="display:grid;justify-items:center;padding:16px 0">${loaderHTML(true)}</div>`;
-  try{const r=await fetch("us.json?t="+Date.now(),{cache:"no-store"});U=await r.json()}catch(e){U=null}
+  try{U=window.klineData?await klineData("us"):await (await fetch("us.json?t="+Date.now(),{cache:"no-store"})).json()}catch(e){U=null}
   fetch("us-news.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(j=>{NW=j;if(sel)renderSel()}).catch(()=>{});
   loading=false;
   if(!U||!U.s){$("usIdx").innerHTML=`<p class="hint">${tt("美股資料還在準備中，大約幾分鐘後再重新整理看看。","US data is being prepared; refresh in a few minutes.")}</p>`;return}

@@ -740,6 +740,18 @@ footer a{color:var(--mute)}
 .usnews a b{font-size:14px;font-weight:600;line-height:1.5}
 
 /* 我的預測卡＋公司領導人 */
+.kl{margin:8px 0 4px}.klbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.klr{display:flex;gap:4px}.klr button{font:inherit;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mute)}
+.klr button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.kllg{display:flex;gap:10px;font-size:11px;color:var(--mute)}.kllg span::before{content:"";display:inline-block;width:12px;height:2px;margin-right:4px;vertical-align:middle;background:currentColor}
+.kllg .m5{color:#e0a100}.kllg .m20{color:#3a7bd5}
+.klinfo{min-height:20px;font-size:12px;display:flex;flex-wrap:wrap;gap:4px 10px;margin:6px 0 2px;align-items:baseline}.klinfo i{font-style:normal;font-weight:700}
+.klsvg{width:100%;height:auto;display:block;touch-action:none;user-select:none;-webkit-user-select:none}
+.klg{stroke:var(--line);stroke-width:.6;stroke-dasharray:2 3}.klt{font-size:9px;fill:var(--mute)}
+.kw{stroke-width:1}.kw.up,.kb.up{stroke:var(--up);fill:var(--up)}.kw.down,.kb.down{stroke:var(--down);fill:var(--down)}.kw.flat,.kb.flat{stroke:var(--flat);fill:var(--flat)}
+.kv{opacity:.35}.kv.up{fill:var(--up)}.kv.down{fill:var(--down)}
+.kma{fill:none;stroke-width:1.3}.kma.m5{stroke:#e0a100}.kma.m20{stroke:#3a7bd5}.kline{fill:none;stroke:var(--ink);stroke-width:1.5}
+.kx{stroke:var(--ink);stroke-width:.8;stroke-dasharray:3 2;opacity:.6}
 .pdcall{border-radius:16px;padding:14px;margin:10px 0 6px;border:2px solid currentColor}
 .pdcall.up{color:var(--up);background:var(--upbg)}.pdcall.down{color:var(--down);background:var(--downbg)}.pdcall.flat{color:var(--mute);background:var(--line)}
 .pdcall>*{color:var(--ink)}.pdcall .sub{color:var(--mute)}
@@ -1475,6 +1487,7 @@ if("serviceWorker" in navigator&&location.hostname.endsWith("github.io")){naviga
 <script src="leaders.js"></script>
 <script src="leaders_us.js"></script>
 <script src="leaders_tw.js"></script>
+<script src="kline.js"></script>
 <script src="twx.js"></script>
 <script src="us_info.js"></script>
 <script src="usx.js"></script>

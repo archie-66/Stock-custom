@@ -2,6 +2,9 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-21k",date:"11/21",items:[
+    ["🕯️","K 線圖","Candlestick charts","台股和美股的個股頁都有 K 線圖：紅色是收盤比開盤高、綠色是收盤比開盤低，下面是成交量，還有 5 日和 20 日均線。可以切 1、2、3 個月，手指按住滑動能看每天的開高低收。","Taiwan and US stock pages now have candlestick charts with volume, 5- and 20-day averages and 1/2/3-month views. Hold and slide to see each day's open, high, low and close."],
+    ["🔮","個股預測直接看","Prediction on every stock page","打開任何一檔（台股的「📰 新聞與分析」或美股的個股頁），就會直接顯示我的預測：偏漲還是偏跌、上漲機率、5 天可能的價格範圍，還有模型的考試成績。","Open any stock and see the model's call right there: up or down, the chance of rising, a likely 5-day price range and the model's honest test score."]]},
   {v:"2026-11-20c",date:"11/20",items:[
     ["🧭","全部股票都有公司遠見和領導人","Vision & leaders for every stock","美股約 95 檔每一家都有執行長、遠見、策略和要注意的地方，執行長名字都在 11/20 查證過。台股約 2,000 家的董事長和總經理直接用官方資料、每天更新；50 檔熱門股有專屬的遠見和策略，其他公司顯示所屬產業的共通重點，ETF 會說明它的投資方式。","Every US stock now has its CEO, vision, strategy and risks (CEOs verified on Nov 20). All ~2,000 Taiwan companies show their official chair and president, with tailored notes for 50 popular ones, industry-wide notes for the rest, and ETF explanations."]
   ]},

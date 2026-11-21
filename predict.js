@@ -30,9 +30,9 @@ const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
 /* 全部股票 20 日漲跌的中位數（當作「大家平均」來比） */
 let medCache={};
 function median20(t){
-  if(medCache[t]!=null)return medCache[t];
+  const mkey=MK+t;if(medCache[mkey]!=null)return medCache[mkey];
   const rs=[];for(const k in H.s){const e=H.s[k][2];const a=e[t],b=e[t-20];if(a!=null&&b)rs.push(a/b-1)}
-  rs.sort((x,y)=>x-y);return medCache[t]=rs.length?rs[Math.floor(rs.length/2)]:0;
+  rs.sort((x,y)=>x-y);return medCache[mkey]=rs.length?rs[Math.floor(rs.length/2)]:0;
 }
 
 /* ---------- 各種方法（每個給 -2 ～ +2 分） ---------- */
@@ -150,22 +150,24 @@ function market(){
 
 /* ---------- 學習模型：用全部股票過去的資料，學每個方法該占多少比重（邏輯迴歸），再用它沒看過的最近資料考試 ---------- */
 const KEYS=["trend","cross","mom","rs","rsi","vol","inst"];
-const MODEL={tw:null,us:null};let training=false;
+const MODEL={tw:null,us:null};const TRAINING={};const WAIT={tw:[],us:[]};
 const sig=z=>1/(1+Math.exp(-z));
 function vec(F){return [1,...KEYS.map(k=>{const f=F.find(x=>x.k===k);return f?f.s/2:0})]}
 function predictP(w,x){return sig(w.reduce((a,wi,i)=>a+wi*x[i],0))}
 function fit(X,Y,iters){const n=X.length,d=X[0].length,w=new Array(d).fill(0);
   for(let it=0;it<iters;it++){const g=new Array(d).fill(0);for(let i=0;i<n;i++){const e=predictP(w,X[i])-Y[i],x=X[i];for(let j=0;j<d;j++)g[j]+=e*x[j]}
     for(let j=0;j<d;j++)w[j]-=1.2*(g[j]/n+(j?0.002*w[j]:0))}return w}
-function trainModel(done){
-  const mk=MK,D=H;if(!D||training)return;const key="tw_model_"+mk;
+function trainModel(done,mk0,D0){
+  const mk=mk0||MK,D=D0||H;if(!D)return;const key="tw_model_"+mk;
+  if(MODEL[mk]&&MODEL[mk].upd===D.updatedAt){done&&done();return}
   try{const c=JSON.parse(localStorage.getItem(key));if(c&&c.upd===D.updatedAt){MODEL[mk]=c;done&&done();return}}catch(e){}
-  training=true;const codes=Object.keys(D.s),X=[],Y=[],T=[];let i=0;
+  if(done)WAIT[mk].push(done);if(TRAINING[mk])return;
+  TRAINING[mk]=true;const codes=Object.keys(D.s),X=[],Y=[],T=[];let i=0;
   const cutIdx=Math.floor(D.dates.length*0.75),cut=D.dates[cutIdx];
   (function step(){
-    const end=Math.min(codes.length,i+80);
-    for(;i<end;i++){const S=series(codes[i]);if(!S||S.c.length<32)continue;
-      for(let t=25;t+5<S.c.length;t+=1){const fut=S.c[t+5]/S.c[t]-1;if(fut===0)continue;X.push(vec(factors(S,t,false)));Y.push(fut>0?1:0);T.push(S.d[t]<cut?0:1)}}
+    const end=Math.min(codes.length,i+80),sv=[H,MK];H=D;MK=mk;
+    try{for(;i<end;i++){const S=series(codes[i]);if(!S||S.c.length<32)continue;
+      for(let t=25;t+5<S.c.length;t+=1){const fut=S.c[t+5]/S.c[t]-1;if(fut===0)continue;X.push(vec(factors(S,t,false)));Y.push(fut>0?1:0);T.push(S.d[t]<cut?0:1)}}}finally{H=sv[0];MK=sv[1]}
     if(i<codes.length){setTimeout(step,0);return}
     const tr=[],te=[];X.forEach((x,k)=>(T[k]?te:tr).push(k));
     let res={upd:D.updatedAt,n:X.length,acc:null,base:null,nTest:te.length};
@@ -175,8 +177,8 @@ function trainModel(done){
       res.acc=hit/te.length;res.base=Math.max(ups,te.length-ups)/te.length;res.cAcc=cN?cHit/cN:null;res.cN=cN;
       res.w=fit(X,Y,120);
     }
-    MODEL[mk]=res;training=false;try{localStorage.setItem(key,JSON.stringify(res))}catch(e){}
-    if(mk===MK)done&&done();
+    MODEL[mk]=res;TRAINING[mk]=false;try{localStorage.setItem(key,JSON.stringify(res))}catch(e){}
+    const W=WAIT[mk].splice(0);W.forEach(f=>{try{f()}catch(e){}});
   })();
 }
 function callHTML(S,t,F){
@@ -305,7 +307,7 @@ function renderStock(){
   const P=checkP(),open=P.find(p=>p.c===code&&p.res==null);
   box.innerHTML=`<h2>${esc(isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n)} <span class="sub">${code}${S.m==="o"?tt(" · 上櫃"," · OTC"):isUS()?tt(" · 美股"," · US"):""}</span></h2>
     <div class="pdprice"><b>${isUS()?"$":""}${fmt(S.c[t])}</b> <span class="${chg>0?"up":chg<0?"down":"flat"}">${pct(chg)}</span> <span class="sub">${S.d[t].slice(5).replace("-","/")} ${tt("收盤","close")}</span></div>
-    ${spark(S)}
+    ${window.klineHTML?klineHTML("pdKl"):spark(S)}
     ${callHTML(S,t,F)}
     ${window.leadersHTML&&leadersHTML(code)?`<details class="pdlead"><summary>🧭 ${tt("公司遠見、策略和執行長","Vision, strategy & leadership")}</summary>${leadersHTML(code)}</details>`:""}
     <div class="sub" style="margin-top:10px">${tt("各方法的分數（模型的根據）","Scores by method (what the model uses)")}</div>${summary(V,F,confOf(V,B))}
@@ -321,6 +323,7 @@ function renderStock(){
   box.querySelectorAll(".pdbtn button").forEach(b=>b.onclick=()=>{
     const P=loadP();P.push({m:MK,c:code,n:isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n,d:S.d[t],px:S.c[t],me:+b.dataset.g,model:(MODEL[MK]&&MODEL[MK].w?(p=>p>=.55?1:p<=.45?-1:0)(predictP(MODEL[MK].w,vec(F))):Math.sign(V.score))||0,res:null});saveP(P);renderStock();renderLog();
   });
+  if(window.drawKline)drawKline("pdKl",klineSeries(H,code),{cur:isUS()?"$":""});
   setTimeout(()=>box.querySelectorAll(".pdn").forEach(n=>n.classList.add("go")),60);
 }
 function renderLog(){
@@ -346,7 +349,7 @@ async function ensure(){
   $("pdInfo").textContent=tt(`${isUS()?"美股":"台股"}歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔 · 更新 ${H.updatedAt||""}`,`History: ${H.dates.length} trading days, ${Object.keys(H.s).length} stocks · updated ${H.updatedAt||""}`);
   if(!code||!H.s[code]){const L=pickList();code=L.length?L[0][0]:null}
   renderMarket();renderPicks();renderStock();renderLog();renderRank();syncMk();
-  if(!MODEL[MK])trainModel(()=>renderStock());
+  if(!MODEL[MK]){const m=MK;trainModel(()=>{if(m===MK)renderStock()})}
 }
 document.addEventListener("click",e=>{const b=e.target.closest(".pdlearn,.pdtile");if(!b)return;e.preventDefault();window.openLesson&&openLesson(b.dataset.l)});
 /* 小教室示範：用目前選的股票真的數字 */
@@ -393,6 +396,25 @@ function setMarket(m){if(m===MK)return;CODE[MK]=code;MK=m;H=CACHE[m];code=CODE[m
   renderMarket();if(H){if(!code||!H.s[code]){const L=pickList();code=L.length?L[0][0]:null}$("pdInfo").textContent=tt(`${m==="us"?"美股":"台股"}歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔 · 更新 ${H.updatedAt||""}`,`${H.dates.length} days, ${Object.keys(H.s).length} stocks`);renderPicks();renderStock();renderLog();renderRank();if(!MODEL[MK])trainModel(()=>renderStock())}else ensure()}
 document.addEventListener("click",e=>{const b=e.target.closest("#pdMk button");if(b)setMarket(b.dataset.m)});
 window.predictOpen=function(m,c){setMarket(m);if(c){CODE[m]=c;if(H&&H.s[c]){code=c;renderPicks();renderStock()}else code=c}};
+/* 給個股頁用：直接顯示「我的預測」卡片（不用切到預測分頁） */
+async function getData(mk){
+  if(CACHE[mk])return CACHE[mk];
+  try{const r=await fetch((mk==="us"?"us.json":"hist.json")+"?t="+Date.now(),{cache:"no-store"});CACHE[mk]=await r.json();if(mk===MK&&!H)H=CACHE[mk]}catch(e){}
+  return CACHE[mk];
+}
+window.predictCard=async function(mk,c,elId){
+  const el=()=>document.getElementById(elId);if(!el())return;
+  const D=await getData(mk);if(!el())return;
+  if(!D||!D.s||!D.s[c]){el().innerHTML=`<p class="sub">${tt("這檔沒有足夠的歷史資料，沒辦法預測。","Not enough history to predict.")}</p>`;return}
+  const sv=[H,MK];H=D;MK=mk;let html="";
+  try{const S=series(c),t=S.c.length-1;
+    if(S.c.length<22)html=`<p class="sub">${tt(`這檔目前只有 ${S.c.length} 天的資料，至少要 22 天才能預測。`,`Only ${S.c.length} days of data; 22 needed.`)}</p>`;
+    else{const F=factors(S,t,true),V=verdict(F);html=callHTML(S,t,F)+`<p class="sub" style="margin:6px 0 0">${tt(`各方法加起來的分數：<b class="${V.cl}">${V.score>0?"+":""}${V.score}</b>／100。想看每個方法怎麼說，按下面的「看預測分析」。`,`Combined method score: ${V.score}/100. Tap Prediction below for details.`)}</p>`}
+  }finally{H=sv[0];MK=sv[1]}
+  el().innerHTML=html;
+  if(!MODEL[mk])trainModel(()=>window.predictCard(mk,c,elId),mk,D);
+};
+window.klineData=getData;
 window.predictRender=function(){
   renderLearn();
   if(!$("pdMkt"))return;

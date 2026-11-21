@@ -57,10 +57,14 @@ let NW=null,INFO=null,H=null,started=false;
 function load(){if(started)return;started=true;
   fetch("tw-news.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(j=>{NW=j;redraw()}).catch(()=>{NW={n:{}};redraw()});
   fetch("tw-info.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(j=>{INFO=j;redraw()}).catch(()=>{INFO={};redraw()});
-  fetch("hist.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json()).then(j=>{H=j;redraw()}).catch(()=>{H=null;redraw()});
+  (window.klineData?klineData("tw"):fetch("hist.json?t="+Date.now(),{cache:"no-store"}).then(r=>r.json())).then(j=>{H=j||null;redraw()}).catch(()=>{H=null;redraw()});
 }
 let cur=null,box=null;
-function redraw(){if(cur&&box)box.innerHTML=body(cur)}
+function redraw(){if(cur&&box){box.innerHTML=body(cur);after(cur)}}
+function after(c){
+  if(H&&H.s[c]&&window.drawKline)drawKline("twKl",klineSeries(H,c),{});
+  if(H&&window.predictCard)predictCard("tw",c,"twPc");
+}
 function series(c){if(!H||!H.s[c])return null;const e=H.s[c],o={c:[],v:[],f:[],d:[]};H.dates.forEach((d,i)=>{if(e[2][i]!=null){o.c.push(e[2][i]);o.v.push(e[3][i]||0);o.f.push(e[4]?e[4][i]:null);o.d.push(d)}});return o}
 function analysis(c){
   const S=series(c);if(!S||S.c.length<21)return null;const cs=S.c,n=cs.length,px=cs[n-1],out=[];
@@ -81,6 +85,10 @@ function body(c){
   const meta=I?[I.i&&`<span class="ustag">${esc(I.i)}</span>`,I.m==="o"?tt("上櫃","OTC"):tt("上市","Listed"),I.f&&tt(`${I.f} 年成立`,`Founded ${I.f}`),I.l&&tt(`${I.l} 年掛牌`,`Listed ${I.l}`),I.c&&tt(`董事長 ${esc(I.c)}`,`Chair ${esc(I.c)}`)].filter(Boolean).join(" · "):"";
   const A=H?analysis(c):null,L=NW?((NW.n||{})[c]||[]):null;
   return `<div class="top2"><div><h3>${esc(name)} <span class="sub">${c}</span></h3>${s?`<div class="sub">${tt("收盤","Close")} <b>${fmt(s[4])}</b> <span class="${s[5]>0?"up":s[5]<0?"down":"flat"}">${s[5]>0?"+":""}${fmt(s[5])}</span></div>`:""}</div><button class="x2">✕</button></div>
+    <h3 class="ush">🕯️ ${tt("K 線圖","Candlestick chart")}</h3>
+    ${H&&H.s[c]?(window.klineHTML?klineHTML("twKl"):""):`<p class="sub">${H?tt("這檔成交量比較小，沒有收錄歷史資料。","No history for this stock."):tt("讀取中…","Loading…")}</p>`}
+    <h3 class="ush">🔮 ${tt("個股預測","Prediction")}</h3>
+    <div id="twPc">${H?(window.loaderHTML?`<div style="display:flex;justify-content:center;padding:8px">${loaderHTML(true)}</div>`:""):`<p class="sub">${tt("讀取中…","Loading…")}</p>`}</div>
     <h3 class="ush">📖 ${tt("公司簡介","About")}</h3>
     ${INTRO[c]?`<p class="usinfo">${esc(INTRO[c])}</p>`:""}${meta?`<p class="usinfo sub" style="margin-top:4px">${meta}</p>`:""}
     ${!INTRO[c]&&!meta?`<p class="sub">${INFO?tt("這檔沒有公司基本資料（可能是 ETF 或特殊股票）。","No company profile (may be an ETF).") :tt("讀取中…","Loading…")}</p>`:""}
@@ -97,7 +105,7 @@ function body(c){
 window.openTwInfo=function(c){
   load();cur=c;
   const m=document.createElement("div");m.className="lsnmask";m.innerHTML=`<div class="lsn twinfo" role="dialog"></div>`;document.body.appendChild(m);
-  box=m.querySelector(".lsn");box.innerHTML=body(c);
+  box=m.querySelector(".lsn");box.innerHTML=body(c);after(c);
   const close=()=>{m.classList.remove("show");setTimeout(()=>m.remove(),300);cur=null;box=null};
   m.addEventListener("click",e=>{if(e.target===m||e.target.closest(".x2"))close();
     if(e.target.closest("#twPred")){close();if(window.predictOpen)predictOpen("tw",c);if(window.goPage)goPage(7)}});

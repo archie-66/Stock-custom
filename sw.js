@@ -1,6 +1,6 @@
 // 離線快取：先拿網路上最新的，沒網路時用上次存的
-const C="stock-custom-v29";
-self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(["./","index.html","i18n.js","stats.js","news.js","fx.js","quiz.js","sim.js","learn.js","leaders.js","leaders_us.js","leaders_tw.js","twx.js","us_info.js","usx.js","predict.js","data.json","manifest.json","icon-192.png"])))});
+const C="stock-custom-v30";
+self.addEventListener("install",e=>{self.skipWaiting();e.waitUntil(caches.open(C).then(c=>c.addAll(["./","index.html","i18n.js","stats.js","news.js","fx.js","quiz.js","sim.js","learn.js","leaders.js","leaders_us.js","leaders_tw.js","kline.js","twx.js","us_info.js","usx.js","predict.js","data.json","manifest.json","icon-192.png"])))});
 self.addEventListener("activate",e=>e.waitUntil(self.clients.claim()));
 self.addEventListener("fetch",e=>{
   if(e.request.method!=="GET"||new URL(e.request.url).origin!==location.origin)return;
