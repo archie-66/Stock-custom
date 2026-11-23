@@ -24,6 +24,7 @@ from sklearn.ensemble import HistGradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 
 H = 5
+HS = (5, 20)  # 試兩種：5 個交易日（大約 1 週）、20 個交易日（大約 1 個月），選考得比較好的
 FEATS = ["r1", "r5", "r10", "r20", "r60", "g5", "g20", "slope", "rsi", "vol", "vr", "vr5", "pos", "body", "ush", "lsh", "inst", "dhi"]
 # 用簡單的話說明每個數字（給手機畫面顯示「主要根據」）
 WHY = {
@@ -78,7 +79,8 @@ def features(D):
             "body": (C - s["o"]) / rng, "ush": (hh - np.maximum(C, s["o"])) / rng, "lsh": (np.minimum(C, s["o"]) - ll) / rng,
             "inst": s["f"].rolling(5, min_periods=1).sum() / (va * 5), "dhi": C / C.rolling(20).max() - 1,
         })
-        x["fut"] = C.shift(-H) / C - 1
+        for hz in HS:
+            x[f"fut{hz}"] = C.shift(-hz) / C - 1
         x["t"] = np.arange(n); x["code"] = code
         x = x[np.isfinite(s["c"].values) & np.isfinite(x["r20"].values)]
         x = x[x["t"] >= 25]
@@ -101,36 +103,39 @@ def make(kind):
 def run(D, mk):
     X = features(D)
     R = ranked(X).values
-    med = X.groupby("t")["fut"].transform("median")
-    lab = np.isfinite(X["fut"].values)
-    Y = (X["fut"].values > med.values).astype(int)
     T = X["t"].values; nd = len(D["dates"]); last = int(T.max())
-    # 走一步考一次：每 5 天一段，只用前面的資料（中間隔 5 天，避免偷看答案）
-    start = max(40, int(nd * 0.5)); step = max(H, (last - H - start) // 12 // H * H or H)
-    folds = list(range(start, last - H + 1, step))
     res = {}
-    for kind in ("logit", "gbm"):
-        hit = tot = 0; per = []; chit = ctot = 0
-        for k in folds:
-            tr = lab & (T < k - H); te = lab & (T >= k) & (T < k + H)
-            if tr.sum() < 2000 or te.sum() < 100:
-                continue
-            m = make(kind).fit(R[tr], Y[tr]); p = m.predict_proba(R[te])[:, 1]
-            ok = (p > 0.5) == (Y[te] == 1); hit += ok.sum(); tot += len(ok); per.append(round(float(ok.mean()), 3))
-            cf = np.abs(p - 0.5) >= 0.05; chit += ok[cf].sum(); ctot += cf.sum()
-        res[kind] = {"acc": hit / tot if tot else None, "n": int(tot), "folds": per, "cAcc": chit / ctot if ctot else None, "cN": int(ctot)}
-        print(mk, kind, res[kind])
-    # 線性模型比較好解釋：除非另一個明顯比較準（多 2% 以上），不然用線性模型
-    best = "logit"
-    if res["gbm"]["acc"] and res["logit"]["acc"] and res["gbm"]["acc"] > res["logit"]["acc"] + 0.02:
-        best = "gbm"
+    for H in HS:
+        fut = X[f"fut{H}"]
+        med = fut.groupby(X["t"]).transform("median")
+        lab = np.isfinite(fut.values)
+        Y = (fut.values > med.values).astype(int)
+        start = max(40, int(nd * 0.5)); step = max(H, (last - H - start) // 12 // H * H or H)
+        folds = list(range(start, last - H + 1, step))
+        for kind in ("logit", "gbm"):
+            hit = tot = 0; per = []; chit = ctot = 0
+            for k in folds:
+                tr = lab & (T < k - H); te = lab & (T >= k) & (T < k + min(H, step))
+                if tr.sum() < 2000 or te.sum() < 100:
+                    continue
+                m = make(kind).fit(R[tr], Y[tr]); p = m.predict_proba(R[te])[:, 1]
+                ok = (p > 0.5) == (Y[te] == 1); hit += ok.sum(); tot += len(ok); per.append(round(float(ok.mean()), 3))
+                cf = np.abs(p - 0.5) >= 0.05; chit += ok[cf].sum(); ctot += cf.sum()
+            res[(H, kind)] = {"acc": float(hit / tot) if tot else None, "n": int(tot), "folds": per,
+                              "cAcc": float(chit / ctot) if ctot else None, "cN": int(ctot), "lab": lab, "Y": Y}
+            print(mk, H, kind, {k: v for k, v in res[(H, kind)].items() if k not in ("lab", "Y")})
+    ok_ = {k: v for k, v in res.items() if v["acc"] is not None and v["n"] >= 2000}
+    # 選考最好的；線性模型比較好解釋，除非另一個明顯比較準（多 2% 以上）
+    bestk = max(ok_, key=lambda k: ok_[k]["acc"] + (0.02 if k[1] == "logit" else 0)) if ok_ else (5, "logit")
+    H, best = bestk; lab, Y = res[bestk]["lab"], res[bestk]["Y"]
+    res = {best: res[bestk]}
     m = make(best).fit(R[lab], Y[lab])
     now = (X["t"].values == last)
     P = m.predict_proba(R[now])[:, 1]
     codes = X["code"].values[now]
     out = {"upd": datetime.now(TW).strftime("%Y-%m-%d %H:%M"), "date": D["dates"][last], "model": best,
            "acc": res[best]["acc"], "nTest": res[best]["n"], "folds": res[best]["folds"], "cAcc": res[best]["cAcc"], "cN": res[best]["cN"],
-           "other": {k: res[k]["acc"] for k in res}, "p": {}, "why": {}}
+           "h": H, "p": {}, "why": {}}
     for i, c in enumerate(codes):
         out["p"][c] = round(float(P[i]), 3)
     if best == "logit":  # 每檔股票影響最大的 3 個原因

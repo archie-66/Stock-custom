@@ -165,9 +165,9 @@ function callHTML(S,t,F,c){
   c=c||code;const M=PRED[MK];
   if(!M)return `<div class="pdcall flat"><div class="sub">🔮 ${tt("我的預測","My call")}</div><p class="sub">${tt("預測結果還在準備中（每天收盤後在 GitHub 上訓練一次）。","Predictions are being prepared (trained daily after the close).")}</p></div>`;
   const Q=predOf(MK,c);
-  const rr=[];for(let i=Math.max(1,t-19);i<=t;i++)rr.push(Math.log(S.c[i]/S.c[i-1]));const mu=avg(rr),sd=Math.sqrt(avg(rr.map(x=>(x-mu)**2)))*Math.sqrt(5);
+  const rr=[];for(let i=Math.max(1,t-19);i<=t;i++)rr.push(Math.log(S.c[i]/S.c[i-1]));const hz=(M&&M.h)||5,mu=avg(rr),sd=Math.sqrt(avg(rr.map(x=>(x-mu)**2)))*Math.sqrt(hz);
   const lo=S.c[t]*Math.exp(-sd),hi=S.c[t]*Math.exp(sd),cur=isUS()?"$":"";
-  const rng=`<div class="pdrg">${tt("5 天後可能的價格範圍（大約 3 次有 2 次會落在這裡）","Likely price range in 5 days (about 2 in 3 chance)")}<br><b>${cur}${fmt(lo)} ～ ${cur}${fmt(hi)}</b></div>`;
+  const rng=`<div class="pdrg">${tt(`${hz} 個交易日後可能的價格範圍（大約 3 次有 2 次會落在這裡）`,`Likely price range in ${hz} trading days (about 2 in 3 chance)`)}<br><b>${cur}${fmt(lo)} ～ ${cur}${fmt(hi)}</b></div>`;
   if(!Q)return `<div class="pdcall flat"><div class="sub">🔮 ${tt("我的預測","My call")}</div><p class="sub">${(MK==="tw"&&/^0/.test(c))||(MK==="us"&&H&&H.meta&&H.meta[c]&&/ETF|FUND/.test(H.meta[c].ty||""))?tt("這是 ETF 或基金（一籃子股票、債券），不是單一公司，所以不做「比大盤強或弱」的預測。","ETFs and funds aren't predicted."):tt("這檔今天沒有預測（資料太少或今天沒有交易）。","No prediction for this stock today.")}</p>${rng}</div>`;
   const p=Q.p,cl=Q.call>0?"up":Q.call<0?"down":"flat";
   const word=Q.call>0?tt("💪 會比大盤強","💪 Likely to beat the market"):Q.call<0?tt("🐢 會比大盤弱","🐢 Likely to lag the market"):tt("🤷 跟大盤差不多","🤷 About the same as the market");
@@ -177,12 +177,12 @@ function callHTML(S,t,F,c){
   const edge=acc!=null?acc-.5:null;
   const grade=edge==null?"":edge>=.08?tt("明顯比亂猜好","clearly better than guessing"):edge>=.03?tt("比亂猜好一些","a bit better than guessing"):edge>0?tt("只比亂猜好一點點","barely better than guessing"):tt("沒有比亂猜好","no better than guessing");
   return `<div class="pdcall ${cl}">
-    <div class="sub">🔮 ${tt("我的預測：接下來 5 個交易日，跟所有股票比","My call: next 5 trading days, vs all stocks")}</div>
+    <div class="sub">🔮 ${tt(`我的預測：接下來 ${hz} 個交易日${hz>=20?"（大約 1 個月）":"（大約 1 週）"}，跟所有股票比`,`My call: next ${hz} trading days, vs all stocks`)}</div>
     <div class="pdcw">${word}</div>
     <div class="pdpb"><span>${tt("贏過大盤的機率","Chance to beat the market")}</span><div class="bar"><i style="width:${(p*100).toFixed(0)}%"></i><em style="left:50%"></em></div><b>${fmt(p*100,0)}%</b></div>
     ${why}${rng}
     ${acc!=null?`<div class="pdex">📝 ${tt(`模型考試成績：每次只用「當時以前」的資料訓練，再猜後面沒看過的日子，總共考了 ${M.nTest.toLocaleString()} 次，猜對 <b>${fmt(acc*100,0)}%</b>（亂猜是 50%）。${f.length>1?`不同時間段的成績在 ${fmt(fmin*100,0)}%～${fmt(fmax*100,0)}% 之間。`:""}結論：<b>${grade}</b>。`,`Walk-forward test: ${M.nTest.toLocaleString()} unseen cases, <b>${fmt(acc*100,0)}%</b> right vs 50% guessing${f.length>1?` (ranging ${fmt(fmin*100,0)}–${fmt(fmax*100,0)}% across periods)`:""}: <b>${grade}</b>.`)}</div>`:""}
-    <details class="pdwhyq"><summary>${tt("為什麼不直接猜漲還是跌？","Why not predict up or down?")}</summary><p>${tt("我們拿過去的資料測過：一檔股票 5 天後漲或跌，主要是跟著整個市場一起動，只看這檔股票自己的價格和成交量猜不出來，考試成績比亂猜還差。但「這檔會比其他股票強還是弱」是猜得出一點的。所以這裡告訴你它比大盤強還是弱：如果大盤漲，比較強的通常漲更多；如果大盤跌，比較強的通常跌比較少。","We tested it: whether a stock rises over 5 days mostly follows the whole market, and the model couldn't beat guessing. Whether it beats other stocks is somewhat predictable, so that's what we show.")}</p></details>
+    <details class="pdwhyq"><summary>${tt("為什麼不直接猜漲還是跌？","Why not predict up or down?")}</summary><p>${tt("我們拿過去的資料測過：一檔股票接下來漲或跌，主要是跟著整個市場一起動，只看這檔股票自己的價格和成交量猜不出來，考試成績比亂猜還差。但「這檔會比其他股票強還是弱」是猜得出一點的。所以這裡告訴你它比大盤強還是弱：如果大盤漲，比較強的通常漲更多；如果大盤跌，比較強的通常跌比較少。","We tested it: whether a stock rises over 5 days mostly follows the whole market, and the model couldn't beat guessing. Whether it beats other stocks is somewhat predictable, so that's what we show.")}</p></details>
   </div>`;
 }
 
@@ -308,7 +308,7 @@ function renderStock(){
         :`<div class="pdbtn"><button data-g="1" class="up">${tt("📈 漲","📈 Up")}</button><button data-g="-1" class="down">${tt("📉 跌","📉 Down")}</button></div>`}
     </div>`;
   box.querySelectorAll(".pdbtn button").forEach(b=>b.onclick=()=>{
-    const P=loadP();P.push({m:MK,c:code,n:isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n,d:S.d[t],px:S.c[t],me:+b.dataset.g,mr:(predOf(MK,code)||{call:0}).call,res:null});saveP(P);renderStock();renderLog();
+    const P=loadP();P.push({m:MK,c:code,n:isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n,d:S.d[t],px:S.c[t],me:+b.dataset.g,mr:PRED[MK]&&(PRED[MK].h||5)===5?(predOf(MK,code)||{call:0}).call:undefined,res:null});saveP(P);renderStock();renderLog();
   });
   if(window.drawKline)drawKline("pdKl",klineSeries(H,code),{cur:isUS()?"$":""});
   setTimeout(()=>box.querySelectorAll(".pdn").forEach(n=>n.classList.add("go")),60);
