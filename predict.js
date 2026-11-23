@@ -398,7 +398,7 @@ window.predictCard=async function(mk,c,elId){
   const sv=[H,MK];H=D;MK=mk;let html="";
   try{const S=series(c),t=S.c.length-1;
     if(S.c.length<22)html=`<p class="sub">${tt(`這檔目前只有 ${S.c.length} 天的資料，至少要 22 天才能預測。`,`Only ${S.c.length} days of data; 22 needed.`)}</p>`;
-    else{const F=factors(S,t,true),V=verdict(F);html=callHTML(S,t,F,c)+`<p class="sub" style="margin:6px 0 0">${tt(`各方法加起來的分數：<b class="${V.cl}">${V.score>0?"+":""}${V.score}</b>／100。想看每個方法怎麼說，按下面的「看預測分析」。`,`Combined method score: ${V.score}/100. Tap Prediction below for details.`)}</p>`}
+    else{const F=factors(S,t,true),V=verdict(F);html=callHTML(S,t,F,c)+`<p class="sub" style="margin:6px 0 0">${tt("想看每個方法（均線、RSI、法人…）怎麼說，按下面的「看預測分析」。","Tap Prediction below to see each method.")}</p>`}
   }finally{H=sv[0];MK=sv[1]}
   el().innerHTML=html;
   if(!PRED[mk])loadPred(mk).then(x=>{if(x)window.predictCard(mk,c,elId)});
