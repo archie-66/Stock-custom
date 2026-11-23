@@ -18,6 +18,38 @@ TICKERS = """ANT SPCX AAPL MSFT NVDA GOOGL AMZN META TSLA AVGO AMD TSM ASML INTC
 COIN PYPL V MA JPM BAC GS MS BRK-B WMT COST KO PEP MCD NKE DIS SBUX JNJ PFE LLY UNH MRK ABBV XOM CVX BA CAT GE F GM RIVN NIO BABA PDD
 SONY IBM CSCO TXN AMAT LRCX KLAC MRVL DELL SPOT RBLX NET CRWD PANW DDOG ANET VRT CEG OKLO IONQ RGTI SOFI HOOD MSTR DUOL
 SPY QQQ VOO VTI SOXX SMH ARKK TLT GLD""".split()
+CORE = set(TICKERS)  # 這些有中文名稱、專屬介紹，新聞也會找中文的
+
+# 其他想看的熱門股：那斯達克 100（不在 S&P 500 的）、外國公司 ADR、熱門成長股、ETF。打錯或下市的代號會自動略過。
+EXTRA = """ASML ARM PDD MELI AZN TEAM ZS MDB CCEP GFS TTD WDAY SHOP DASH TRI MSTR APP CDNS SNPS FTNT ADSK MNST ODFL ROP PAYX CTAS KDP
+BIDU JD LI XPEV NIO BILI TME NTES YUMC BEKE ZTO TCOM FUTU TIGR TM HMC NVO SAP SHEL BP UL RIO BHP VALE HSBC MUFG SMFG INFY WIT HDB IBN
+SE GRAB CPNG NU STNE UMC ASX TSM SONY NVS GSK SNY DEO BUD BTI TTE EQNR E ENB SU CNQ CP CNI RY TD BMO BNS SHOP SPOT ABBNY
+GME AMC PLUG RKLB ASTS LUNR ACHR JOBY SOUN BBAI AI PATH U DKNG AFRM UPST SNAP PINS LYFT RDDT CAVA CELH HIMS CHWY ROKU ZM DOCU TWLO
+OKTA HUBS BILL CFLT GTLB S ESTC IOT ALAB CRDO COHR LITE NBIS CRWV CORZ IREN CIFR MARA RIOT CLSK HUT WULF QBTS QUBT SMR NNE LEU CCJ
+UEC TLN VST NRG LCID CHPT BYND PTON CVNA OPEN W ETSY EBAY TOST XYZ CRCL FIG CHYM KLAR GLXY BMNR SBET RGTI IONQ OKLO TEM RXRX
+ONON BIRK DECK LULU ELF CROX SHAK WING DPZ CMG TXRH ABNB EXPE BKNG MAR HLT RCL CCL NCLH DAL UAL AAL LUV JBLU
+DIA IWM VUG VTV SCHD JEPI JEPQ VGT XLK XLF XLE XLV XLY XLP XLI XLU XLB XLRE XLC SOXL SOXS TQQQ SQQQ NVDL TSLL IBIT ETHA FBTC GBTC
+SLV USO UNG IEF SHY BND AGG HYG LQD EEM EFA VEA VWO EWJ EWT EWY FXI KWEB INDA VNQ VYM VIG QQQM SPLG RSP MTUM ITA URA TAN ICLN LIT
+BOTZ CIBR HACK IGV XBI IBB KRE GDX GDXJ COPX SPYG SPYD SCHG VT IVV""".split()
+
+SEC_ZH = {"Information Technology": "科技", "Health Care": "醫療保健", "Financials": "金融", "Consumer Discretionary": "非必需消費",
+          "Communication Services": "通訊服務", "Industrials": "工業", "Consumer Staples": "民生必需", "Energy": "能源",
+          "Utilities": "公用事業", "Real Estate": "房地產", "Materials": "原物料"}
+SECTOR = {}
+
+
+def sp500():
+    """S&P 500 成分股（每次執行都抓最新名單，成分股有換也會跟著換）"""
+    t = fetch("https://raw.githubusercontent.com/datasets/s-and-p-500-companies/main/data/constituents.csv", tries=2)
+    out = []
+    try:
+        for row in csv.DictReader(io.StringIO(t)):
+            tk = row["Symbol"].strip().replace(".", "-")
+            out.append(tk); SECTOR[tk] = SEC_ZH.get(row.get("GICS Sector", ""), row.get("GICS Sector", ""))
+    except Exception as e:
+        print("S&P 500 名單抓不到", e)
+    print("S&P 500：", len(out), "檔")
+    return out
 
 
 def fetch(url, tries=2):
@@ -129,7 +161,7 @@ def bulk_news():
     print("鉅亨美股新聞分到", len(BULK), "檔")
 
 
-def news(tk, days=3):
+def news(tk, days=3, quick=False):
     """近 3 天新聞：先找中文（Google 新聞台灣版），不夠再補英文（Yahoo Finance）。只存標題、來源、時間和連結。"""
     out, seen = [], set()
     now = datetime.now(timezone.utc)
@@ -161,6 +193,11 @@ def news(tk, days=3):
 
     for x in BULK.get(tk, []):
         add(*x)
+    if quick:  # 不是常看的那 100 檔：只抓英文 Yahoo Finance，比較快
+        time.sleep(.4)
+        rss(f"https://feeds.finance.yahoo.com/rss/2.0/headline?s={tk}&region=US&lang=en-US", False)
+        out.sort(key=lambda x: x["d"], reverse=True)
+        return out[:6]
     if len(out) >= 4:
         out.sort(key=lambda x: x["d"], reverse=True); return out[:6]
     time.sleep(1.8)
@@ -182,8 +219,10 @@ def main():
         print(key, len(rows))
         if rows:
             data["^" + key] = rows; names["^" + key] = n
-    for tk in TICKERS:
-        nm, rows = get(tk, tk.lower() + ".us"); time.sleep(.6)
+    ALL = list(dict.fromkeys(TICKERS + sp500() + EXTRA))
+    print("要抓", len(ALL), "檔")
+    for tk in ALL:
+        nm, rows = get(tk, tk.lower() + ".us"); time.sleep(.5)
         print(tk, len(rows), nm)
         if rows:
             data[tk] = rows; names[tk] = nm or tk
@@ -206,13 +245,16 @@ def main():
             out["idx"][k[1:]] = [names[k], cs]
         else:
             out["s"][k] = [names[k], "us", cs, vs, None, os_, hs, ls]
+    for k, sec in SECTOR.items():
+        if k in META and sec:
+            META[k]["sec"] = sec
     out["meta"] = {k: v for k, v in META.items() if k in out["s"]}
     json.dump(out, open("us.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     bulk_news()
     nw = {"updatedAt": out["updatedAt"], "n": {}}
     for tk in out["s"]:
         try:
-            nw["n"][tk] = news(tk)
+            nw["n"][tk] = news(tk, quick=tk not in CORE)
         except Exception as e:
             print("news fail", tk, e)
     json.dump(nw, open("us-news.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))

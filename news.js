@@ -2,6 +2,9 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-23u",date:"11/23",items:[
+    ["🇺🇸","美股變成約 750 檔","About 750 US stocks","S&P 500 全部 500 檔（成分股換了也會自動跟著換）、那斯達克 100、熱門成長股（像 RKLB、HIMS、APP、加密貨幣相關）、外國公司（豐田、諾和諾德、阿里巴巴等）和常見 ETF 都有。每一檔都有 K 線、預測和近三天新聞。","All S&P 500 stocks (auto-updated), the Nasdaq-100, popular growth names, foreign ADRs and common ETFs, each with charts, predictions and news."],
+    ["🔥","美股新的排序：成交最熱","New sort: most traded","美股列表預設顯示今天成交金額最大的 20 檔，最常被討論的股票一眼就看到。","The US list now opens on the 20 most-traded stocks."]]},
   {v:"2026-11-21k",date:"11/21",items:[
     ["🕯️","K 線圖","Candlestick charts","台股和美股的個股頁都有 K 線圖：紅色是收盤比開盤高、綠色是收盤比開盤低，下面是成交量，還有 5 日和 20 日均線。可以切 1、2、3 個月，手指按住滑動能看每天的開高低收。","Taiwan and US stock pages now have candlestick charts with volume, 5- and 20-day averages and 1/2/3-month views. Hold and slide to see each day's open, high, low and close."],
     ["🔮","個股預測直接看","Prediction on every stock page","打開任何一檔（台股的「📰 新聞與分析」或美股的個股頁），就會直接顯示我的預測：偏漲還是偏跌、上漲機率、5 天可能的價格範圍，還有模型的考試成績。","Open any stock and see the model's call right there: up or down, the chance of rising, a likely 5-day price range and the model's honest test score."]]},

@@ -8,7 +8,7 @@ const pct=n=>n==null||isNaN(n)?"—":(n>=0?"+":"")+fmt(n,2)+"%";
 const cl=n=>n>0?"up":n<0?"down":"flat";
 const IPO={ANT:{px:83,date:"2026-11-19",name:"Anthropic"}};
 const ZH=window.US_ZH={ANT:"Anthropic",SPCX:"SpaceX",AAPL:"蘋果",MSFT:"微軟",NVDA:"輝達",GOOGL:"Google（Alphabet）",AMZN:"亞馬遜",META:"Meta",TSLA:"特斯拉",AVGO:"博通",AMD:"超微",TSM:"台積電 ADR",ASML:"艾司摩爾",INTC:"英特爾",QCOM:"高通",MU:"美光",ARM:"安謀",SMCI:"美超微",ORCL:"甲骨文",CRM:"Salesforce",ADBE:"Adobe",NFLX:"Netflix",PLTR:"Palantir",SNOW:"Snowflake",UBER:"Uber",ABNB:"Airbnb",SHOP:"Shopify",COIN:"Coinbase",PYPL:"PayPal",V:"Visa",MA:"萬事達卡",JPM:"摩根大通",BAC:"美國銀行",GS:"高盛",MS:"摩根士丹利","BRK-B":"波克夏",WMT:"沃爾瑪",COST:"好市多",KO:"可口可樂",PEP:"百事",MCD:"麥當勞",NKE:"Nike",DIS:"迪士尼",SBUX:"星巴克",JNJ:"嬌生",PFE:"輝瑞",LLY:"禮來",UNH:"聯合健康",MRK:"默克",ABBV:"艾伯維",XOM:"艾克森美孚",CVX:"雪佛龍",BA:"波音",CAT:"開拓重工",GE:"奇異",F:"福特",GM:"通用汽車",RIVN:"Rivian",NIO:"蔚來",BABA:"阿里巴巴",PDD:"拼多多",SONY:"索尼",IBM:"IBM",CSCO:"思科",TXN:"德州儀器",AMAT:"應用材料",LRCX:"科林研發",KLAC:"科磊",MRVL:"邁威爾",DELL:"戴爾",SPOT:"Spotify",RBLX:"Roblox",NET:"Cloudflare",CRWD:"CrowdStrike",PANW:"Palo Alto",DDOG:"Datadog",ANET:"Arista",VRT:"Vertiv",CEG:"Constellation 能源",OKLO:"Oklo",IONQ:"IonQ",RGTI:"Rigetti",SOFI:"SoFi",HOOD:"Robinhood",MSTR:"Strategy",DUOL:"Duolingo",SPY:"SPDR S&P500 ETF",QQQ:"那斯達克 100 ETF",VOO:"Vanguard S&P500 ETF",VTI:"美國全市場 ETF",SOXX:"半導體 ETF",SMH:"半導體 ETF（VanEck）",ARKK:"方舟創新 ETF",TLT:"20 年美債 ETF",GLD:"黃金 ETF"};
-let U=null,NW=null,loading=false,sel=null,sortBy="chg";
+let U=null,NW=null,loading=false,sel=null,sortBy="hot";
 const watch=()=>{try{return JSON.parse(localStorage.getItem("tw_uswatch"))||[]}catch(e){return []}};
 const setWatch=a=>{try{localStorage.setItem("tw_uswatch",JSON.stringify(a))}catch(e){}};
 function last2(cs){const v=[];for(let i=cs.length-1;i>=0&&v.length<2;i--)if(cs[i]!=null)v.push([i,cs[i]]);return v}
@@ -35,7 +35,7 @@ function renderANT(){
 }
 function renderList(){
   const all=Object.keys(U.s).map(info).filter(Boolean),W=watch();
-  let L;if(sortBy==="watch")L=all.filter(x=>W.includes(x.k));else if(sortBy==="down")L=all.filter(x=>x.ch!=null).sort((a,b)=>a.ch-b.ch).slice(0,15);else L=all.filter(x=>x.ch!=null).sort((a,b)=>b.ch-a.ch).slice(0,15);
+  let L;if(sortBy==="hot")L=all.filter(x=>x.c!=null&&x.v!=null&&!/^\^/.test(x.k)).sort((a,b)=>b.c*b.v-a.c*a.v).slice(0,20);else if(sortBy==="watch")L=all.filter(x=>W.includes(x.k));else if(sortBy==="down")L=all.filter(x=>x.ch!=null).sort((a,b)=>a.ch-b.ch).slice(0,15);else L=all.filter(x=>x.ch!=null).sort((a,b)=>b.ch-a.ch).slice(0,15);
   $("usSort").querySelectorAll("button").forEach(b=>b.classList.toggle("on",b.dataset.s===sortBy));
   $("usList").innerHTML=L.length?L.map(x=>`<button class="usrow" data-k="${x.k}"><span class="nm"><b>${esc(x.n)}</b><span class="sub">${x.k}</span></span>${spark(x.cs.slice(-20),60,22)}<span class="px">$${fmt(x.c)}</span><span class="pc ${cl(x.ch)}">${pct(x.ch)}</span></button>`).join("")
     :`<p class="hint">${sortBy==="watch"?tt("還沒有自選美股。點一檔股票，再按「⭐ 加入自選」。","No US favorites yet. Open a stock and tap ⭐."):"—"}</p>`;
@@ -76,7 +76,8 @@ function renderSel(){
       <div class="stat"><div class="sub">${ipo?tt("比承銷價","vs IPO price"):tt("今天成交量","Volume today")}</div><b>${ipo?`<span class="${cl(I.c-ipo.px)}">${pct((I.c/ipo.px-1)*100)}</span>`:vs?fmt(vs,1)+tt(" 倍平常"," × normal"):"—"}</b></div></div>
     ${I.days<22?`<p class="hint">${tt(`這檔目前只有 ${I.days} 天的資料，預測分析需要至少 22 天。`,`Only ${I.days} day(s) of data; prediction needs 22.`)}</p>`:""}
     <h3 class="ush">🔮 ${tt("個股預測","Prediction")}</h3><div id="usPc">${window.loaderHTML?`<div style="display:flex;justify-content:center;padding:8px">${loaderHTML(true)}</div>`:""}</div>
-    ${window.US_INFO&&US_INFO[sel]?`<h3 class="ush">📖 ${tt("公司簡介","About")}</h3><p class="usinfo"><span class="ustag">${esc(US_INFO[sel][0])}</span>${esc(US_INFO[sel][1])}</p>`:""}
+    ${window.US_INFO&&US_INFO[sel]?`<h3 class="ush">📖 ${tt("公司簡介","About")}</h3><p class="usinfo"><span class="ustag">${esc(US_INFO[sel][0])}</span>${esc(US_INFO[sel][1])}</p>`
+      :(m=>m?`<h3 class="ush">📖 ${tt("公司簡介","About")}</h3><p class="usinfo">${m.sec?`<span class="ustag">${esc(m.sec)}</span>`:""}${esc(m.ln||I.en||"")}${m.ex?` · ${esc(m.ex)}`:""}</p><p class="sub" style="margin:4px 0 0">${tt("這檔還沒有中文介紹和公司策略，想看的話跟我說代號，我幫你補上。","No detailed profile yet.")}</p>`:"")(U.meta&&U.meta[sel])}
     ${window.leadersHTML?leadersHTML(sel):""}
     <h3 class="ush">🧠 ${tt("簡短分析","Quick analysis")}</h3>
     <div class="usan">${analysis(sel,I).map(x=>`<div><span>${x[0]}</span><p>${x[1]}</p></div>`).join("")}</div>
@@ -92,7 +93,7 @@ function renderSel(){
 function pick(k){sel=k;renderSel();const el=$("usSel");if(el)el.scrollIntoView({behavior:"smooth",block:"start"})}
 function search(q){q=q.trim().toLowerCase();const box=$("usSug");if(!q||!U){box.innerHTML="";return}
   const r=Object.keys(U.s).filter(k=>k.toLowerCase().startsWith(q)||(ZH[k]||"").toLowerCase().includes(q)||U.s[k][0].toLowerCase().includes(q)).slice(0,8);
-  box.innerHTML=r.length?r.map(k=>`<button data-k="${k}"><b>${esc(ZH[k]||U.s[k][0])}</b><span class="sub">${k}</span></button>`).join(""):`<p class="sub">${tt("找不到。目前收錄約 100 檔熱門美股和 ETF。","Not found. About 100 popular US stocks and ETFs are tracked.")}</p>`;
+  box.innerHTML=r.length?r.map(k=>`<button data-k="${k}"><b>${esc(ZH[k]||U.s[k][0])}</b><span class="sub">${k}</span></button>`).join(""):`<p class="sub">${tt(`找不到。目前收錄 ${Object.keys(U.s).length} 檔（S&P 500 全部、那斯達克 100、熱門成長股、外國公司和 ETF）。想加哪一檔跟我說代號。`,`Not found. ${Object.keys(U.s).length} stocks are tracked.`)}</p>`;
   box.querySelectorAll("button").forEach(b=>b.onclick=()=>{box.innerHTML="";$("usQ").value="";pick(b.dataset.k)})}
 async function load(){
   if(U||loading)return;loading=true;
