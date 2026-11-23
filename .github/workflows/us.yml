@@ -24,13 +24,15 @@ jobs:
         with:
           python-version: "3.12"
       - name: 抓美股資料
-        run: python us.py
+        run: |
+          pip install -q numpy pandas scikit-learn
+          python us.py
       - name: 存檔
         run: |
           git config user.name "stock-bot"
           git config user.email "stock-bot@users.noreply.github.com"
           if [ -n "$(git status --porcelain us.json us-news.json)" ]; then
-            git add us.json us-news.json
+            git add us.json us-news.json pred-us.json 2>/dev/null || git add us.json us-news.json
             git commit -q -m "更新美股資料 $(TZ=Asia/Taipei date '+%F %H:%M')"
             for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push -q && break; sleep 5; done
           fi

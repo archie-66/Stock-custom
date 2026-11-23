@@ -2,6 +2,10 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-24m",date:"11/24",items:[
+    ["🎯","預測變得比較準","A more accurate prediction","我們測過，「5 天後漲還是跌」主要跟著整個市場，猜不準。所以預測改成「這檔會比大盤強還是弱」，台股用過去資料考試大約 6 成多會對（亂猜是 5 成）。","Predicting up/down didn't beat guessing, so the model now predicts whether a stock beats the market. In Taiwan it's right about 60%+ of the time vs 50% guessing."],
+    ["🧠","新模型看 18 個數字","18 signals","最近漲跌、離均線多遠、RSI、波動大小、成交量、K 線的紅黑和影線、法人買賣等。每檔都會列出影響最大的 3 個原因。","Momentum, averages, RSI, volatility, volume, candle shape and institutional flows, with the top 3 reasons for each stock."],
+    ["📚","訓練資料變多","More training data","模型每天收盤後在 GitHub 上自動重新訓練。台股用大約 1 年的資料，美股用 2 年，手機不用再自己算，打開更快。","Retrained daily on GitHub with about 1 year (Taiwan) and 2 years (US) of data, so your phone loads results instantly."]]},
   {v:"2026-11-23u",date:"11/23",items:[
     ["🇺🇸","美股變成約 750 檔","About 750 US stocks","S&P 500 全部 500 檔（成分股換了也會自動跟著換）、那斯達克 100、熱門成長股（像 RKLB、HIMS、APP、加密貨幣相關）、外國公司（豐田、諾和諾德、阿里巴巴等）和常見 ETF 都有。每一檔都有 K 線、預測和近三天新聞。","All S&P 500 stocks (auto-updated), the Nasdaq-100, popular growth names, foreign ADRs and common ETFs, each with charts, predictions and news."],
     ["🔥","美股新的排序：成交最熱","New sort: most traded","美股列表預設顯示今天成交金額最大的 20 檔，最常被討論的股票一眼就看到。","The US list now opens on the 20 most-traded stocks."]]},

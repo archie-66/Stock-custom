@@ -148,55 +148,41 @@ function market(){
 }
 
 
-/* ---------- 學習模型：用全部股票過去的資料，學每個方法該占多少比重（邏輯迴歸），再用它沒看過的最近資料考試 ---------- */
-const KEYS=["trend","cross","mom","rs","rsi","vol","inst"];
-const MODEL={tw:null,us:null};const TRAINING={};const WAIT={tw:[],us:[]};
-const sig=z=>1/(1+Math.exp(-z));
-function vec(F){return [1,...KEYS.map(k=>{const f=F.find(x=>x.k===k);return f?f.s/2:0})]}
-function predictP(w,x){return sig(w.reduce((a,wi,i)=>a+wi*x[i],0))}
-function fit(X,Y,iters){const n=X.length,d=X[0].length,w=new Array(d).fill(0);
-  for(let it=0;it<iters;it++){const g=new Array(d).fill(0);for(let i=0;i<n;i++){const e=predictP(w,X[i])-Y[i],x=X[i];for(let j=0;j<d;j++)g[j]+=e*x[j]}
-    for(let j=0;j<d;j++)w[j]-=1.2*(g[j]/n+(j?0.002*w[j]:0))}return w}
-function trainModel(done,mk0,D0){
-  const mk=mk0||MK,D=D0||H;if(!D)return;const key="tw_model_"+mk;
-  if(MODEL[mk]&&MODEL[mk].upd===D.updatedAt){done&&done();return}
-  try{const c=JSON.parse(localStorage.getItem(key));if(c&&c.upd===D.updatedAt){MODEL[mk]=c;done&&done();return}}catch(e){}
-  if(done)WAIT[mk].push(done);if(TRAINING[mk])return;
-  TRAINING[mk]=true;const codes=Object.keys(D.s),X=[],Y=[],T=[];let i=0;
-  const cutIdx=Math.floor(D.dates.length*0.75),cut=D.dates[cutIdx];
-  (function step(){
-    const end=Math.min(codes.length,i+80),sv=[H,MK];H=D;MK=mk;
-    try{for(;i<end;i++){const S=series(codes[i]);if(!S||S.c.length<32)continue;
-      for(let t=25;t+5<S.c.length;t+=1){const fut=S.c[t+5]/S.c[t]-1;if(fut===0)continue;X.push(vec(factors(S,t,false)));Y.push(fut>0?1:0);T.push(S.d[t]<cut?0:1)}}}finally{H=sv[0];MK=sv[1]}
-    if(i<codes.length){setTimeout(step,0);return}
-    const tr=[],te=[];X.forEach((x,k)=>(T[k]?te:tr).push(k));
-    let res={upd:D.updatedAt,n:X.length,acc:null,base:null,nTest:te.length};
-    if(tr.length>200&&te.length>100){
-      const w0=fit(tr.map(k=>X[k]),tr.map(k=>Y[k]),120);
-      let hit=0,ups=0,cN=0,cHit=0;te.forEach(k=>{const p=predictP(w0,X[k]);if((p>.5)===(Y[k]===1))hit++;ups+=Y[k];if(Math.abs(p-.5)>=.05){cN++;if((p>.5)===(Y[k]===1))cHit++}});
-      res.acc=hit/te.length;res.base=Math.max(ups,te.length-ups)/te.length;res.cAcc=cN?cHit/cN:null;res.cN=cN;
-      res.w=fit(X,Y,120);
-    }
-    MODEL[mk]=res;TRAINING[mk]=false;try{localStorage.setItem(key,JSON.stringify(res))}catch(e){}
-    const W=WAIT[mk].splice(0);W.forEach(f=>{try{f()}catch(e){}});
-  })();
-}
-function callHTML(S,t,F){
-  const M=MODEL[MK];
-  if(!M)return `<div class="pdcall flat"><div class="sub">🔮 ${tt("我的預測","My call")}</div><div style="display:flex;align-items:center;gap:10px">${window.loaderHTML?loaderHTML(true):""}<span>${tt("正在用全部股票的歷史資料訓練模型…","Training on all stocks' history…")}</span></div></div>`;
-  if(!M.w)return "";
-  const p=predictP(M.w,vec(F)),up=p>=.55,dn=p<=.45,cl=up?"up":dn?"down":"flat";
-  const word=up?tt("📈 偏漲","📈 Leaning up"):dn?tt("📉 偏跌","📉 Leaning down"):tt("🤷 看不出方向","🤷 No clear direction");
+/* ---------- 預測模型：在 GitHub 上每天訓練（model.py），這裡只讀結果 pred-tw.json / pred-us.json ---------- */
+const PRED={tw:null,us:null};
+const WHY={r1:[["今天漲比較多","今天跌比較多"],["Up a lot today","Down a lot today"]],r5:[["近 5 天漲比較多","近 5 天跌比較多"],["Strong last 5 days","Weak last 5 days"]],
+  r10:[["近 10 天漲比較多","近 10 天跌比較多"],["Strong last 10 days","Weak last 10 days"]],r20:[["近 1 個月漲比較多","近 1 個月跌比較多"],["Strong last month","Weak last month"]],
+  r60:[["近 3 個月漲比較多","近 3 個月跌比較多"],["Strong last 3 months","Weak last 3 months"]],g5:[["價格在 5 日均線上方","價格在 5 日均線下方"],["Above 5-day average","Below 5-day average"]],
+  g20:[["價格在 20 日均線上方","價格在 20 日均線下方"],["Above 20-day average","Below 20-day average"]],slope:[["20 日均線往上","20 日均線往下"],["20-day average rising","20-day average falling"]],
+  rsi:[["RSI 偏高（漲多了）","RSI 偏低（跌多了）"],["RSI high","RSI low"]],vol:[["股價波動大","股價波動小、比較穩"],["Volatile","Calm, low volatility"]],
+  vr:[["今天成交量放大","今天成交量縮小"],["Volume up today","Volume down today"]],vr5:[["最近成交量放大","最近成交量縮小"],["Volume rising lately","Volume falling lately"]],
+  pos:[["接近一個月的最高價","接近一個月的最低價"],["Near 1-month high","Near 1-month low"]],body:[["今天收紅 K","今天收黑 K"],["Closed above open","Closed below open"]],
+  ush:[["上影線長（上面有賣壓）","幾乎沒有上影線"],["Long upper shadow","No upper shadow"]],lsh:[["下影線長（下面有買盤）","幾乎沒有下影線"],["Long lower shadow","No lower shadow"]],
+  inst:[["外資投信在買","外資投信在賣"],["Institutions buying","Institutions selling"]],dhi:[["離一個月高點近","離一個月高點遠"],["Close to 1-month high","Far from 1-month high"]]};
+async function loadPred(mk){if(PRED[mk])return PRED[mk];try{const r=await fetch(`pred-${mk}.json?t=`+Date.now(),{cache:"no-store"});if(r.ok)PRED[mk]=await r.json()}catch(e){}return PRED[mk]}
+function predOf(mk,c){const M=PRED[mk];if(!M||!M.p||M.p[c]==null)return null;const p=M.p[c];return {p,call:p>=.55?1:p<=.45?-1:0}}
+function callHTML(S,t,F,c){
+  c=c||code;const M=PRED[MK];
+  if(!M)return `<div class="pdcall flat"><div class="sub">🔮 ${tt("我的預測","My call")}</div><p class="sub">${tt("預測結果還在準備中（每天收盤後在 GitHub 上訓練一次）。","Predictions are being prepared (trained daily after the close).")}</p></div>`;
+  const Q=predOf(MK,c);
   const rr=[];for(let i=Math.max(1,t-19);i<=t;i++)rr.push(Math.log(S.c[i]/S.c[i-1]));const mu=avg(rr),sd=Math.sqrt(avg(rr.map(x=>(x-mu)**2)))*Math.sqrt(5);
   const lo=S.c[t]*Math.exp(-sd),hi=S.c[t]*Math.exp(sd),cur=isUS()?"$":"";
-  const edge=M.acc!=null?M.acc-M.base:null;
-  const grade=edge==null?"":edge>=.03?tt("比亂猜好一些","a bit better than guessing"):edge>0?tt("只比亂猜好一點點","barely better than guessing"):tt("沒有比亂猜好","no better than guessing");
+  const rng=`<div class="pdrg">${tt("5 天後可能的價格範圍（大約 3 次有 2 次會落在這裡）","Likely price range in 5 days (about 2 in 3 chance)")}<br><b>${cur}${fmt(lo)} ～ ${cur}${fmt(hi)}</b></div>`;
+  if(!Q)return `<div class="pdcall flat"><div class="sub">🔮 ${tt("我的預測","My call")}</div><p class="sub">${(MK==="tw"&&/^0/.test(c))||(MK==="us"&&H&&H.meta&&H.meta[c]&&/ETF|FUND/.test(H.meta[c].ty||""))?tt("這是 ETF 或基金（一籃子股票、債券），不是單一公司，所以不做「比大盤強或弱」的預測。","ETFs and funds aren't predicted."):tt("這檔今天沒有預測（資料太少或今天沒有交易）。","No prediction for this stock today.")}</p>${rng}</div>`;
+  const p=Q.p,cl=Q.call>0?"up":Q.call<0?"down":"flat";
+  const word=Q.call>0?tt("💪 會比大盤強","💪 Likely to beat the market"):Q.call<0?tt("🐢 會比大盤弱","🐢 Likely to lag the market"):tt("🤷 跟大盤差不多","🤷 About the same as the market");
+  const W=(M.why&&M.why[c])||[];
+  const why=W.length?`<div class="pdwhy"><div class="sub">${tt("主要根據","Main reasons")}</div>${W.map(([k,side,eff])=>WHY[k]?`<div><span class="${eff>0?"up":"down"}">${eff>0?"▲":"▼"}</span>${tt(WHY[k][0][side>0?0:1],WHY[k][1][side>0?0:1])}</div>`:"").join("")}</div>`:"";
+  const acc=M.acc,f=(M.folds||[]).filter(x=>x!=null),fmin=f.length?Math.min(...f):null,fmax=f.length?Math.max(...f):null;
+  const edge=acc!=null?acc-.5:null;
+  const grade=edge==null?"":edge>=.08?tt("明顯比亂猜好","clearly better than guessing"):edge>=.03?tt("比亂猜好一些","a bit better than guessing"):edge>0?tt("只比亂猜好一點點","barely better than guessing"):tt("沒有比亂猜好","no better than guessing");
   return `<div class="pdcall ${cl}">
-    <div class="sub">🔮 ${tt("我的預測：接下來 5 個交易日","My call: next 5 trading days")}</div>
+    <div class="sub">🔮 ${tt("我的預測：接下來 5 個交易日，跟所有股票比","My call: next 5 trading days, vs all stocks")}</div>
     <div class="pdcw">${word}</div>
-    <div class="pdpb"><span>${tt("上漲機率","Chance of rising")}</span><div class="bar"><i style="width:${(p*100).toFixed(0)}%"></i><em style="left:50%"></em></div><b>${fmt(p*100,0)}%</b></div>
-    <div class="pdrg">${tt("可能的價格範圍（大約 3 次有 2 次會落在這裡）","Likely range (about 2 in 3 chance)")}<br><b>${cur}${fmt(lo)} ～ ${cur}${fmt(hi)}</b></div>
-    ${M.acc!=null?`<div class="pdex">📝 ${tt(`模型考試成績：用最近它沒看過的 ${M.nTest.toLocaleString()} 筆資料測試，猜對 <b>${fmt(M.acc*100,0)}%</b>；每次都猜比較常發生的那一邊是 ${fmt(M.base*100,0)}%。結論：<b>${grade}</b>。`,`Test score on ${M.nTest.toLocaleString()} unseen cases: <b>${fmt(M.acc*100,0)}%</b> right vs ${fmt(M.base*100,0)}% for always guessing the common side: <b>${grade}</b>.`)}${M.cAcc!=null&&M.cN>50?tt(` 只看模型比較有把握（機率離 50% 至少 5 個百分點）的時候：猜對 ${fmt(M.cAcc*100,0)}%。`,` When it's more confident: ${fmt(M.cAcc*100,0)}%.`):""}</div>`:""}
+    <div class="pdpb"><span>${tt("贏過大盤的機率","Chance to beat the market")}</span><div class="bar"><i style="width:${(p*100).toFixed(0)}%"></i><em style="left:50%"></em></div><b>${fmt(p*100,0)}%</b></div>
+    ${why}${rng}
+    ${acc!=null?`<div class="pdex">📝 ${tt(`模型考試成績：每次只用「當時以前」的資料訓練，再猜後面沒看過的日子，總共考了 ${M.nTest.toLocaleString()} 次，猜對 <b>${fmt(acc*100,0)}%</b>（亂猜是 50%）。${f.length>1?`不同時間段的成績在 ${fmt(fmin*100,0)}%～${fmt(fmax*100,0)}% 之間。`:""}結論：<b>${grade}</b>。`,`Walk-forward test: ${M.nTest.toLocaleString()} unseen cases, <b>${fmt(acc*100,0)}%</b> right vs 50% guessing${f.length>1?` (ranging ${fmt(fmin*100,0)}–${fmt(fmax*100,0)}% across periods)`:""}: <b>${grade}</b>.`)}</div>`:""}
+    <details class="pdwhyq"><summary>${tt("為什麼不直接猜漲還是跌？","Why not predict up or down?")}</summary><p>${tt("我們拿過去的資料測過：一檔股票 5 天後漲或跌，主要是跟著整個市場一起動，只看這檔股票自己的價格和成交量猜不出來，考試成績比亂猜還差。但「這檔會比其他股票強還是弱」是猜得出一點的。所以這裡告訴你它比大盤強還是弱：如果大盤漲，比較強的通常漲更多；如果大盤跌，比較強的通常跌比較少。","We tested it: whether a stock rises over 5 days mostly follows the whole market, and the model couldn't beat guessing. Whether it beats other stocks is somewhat predictable, so that's what we show.")}</p></details>
   </div>`;
 }
 
@@ -219,7 +205,8 @@ function checkP(){
   const P=loadP();let ch=false;
   for(const p of P){if(p.res!=null||(p.m||"tw")!==MK)continue;const S=series(p.c);if(!S)continue;
     const i=S.d.indexOf(p.d);if(i<0||i+5>=S.c.length)continue;
-    const fut=S.c[i+5];p.end=fut;p.res=fut>p.px?1:fut<p.px?-1:0;ch=true}
+    const fut=S.c[i+5];p.end=fut;p.res=fut>p.px?1:fut<p.px?-1:0;ch=true;
+    const di=H.dates.indexOf(p.d);if(di>=0&&di+5<H.dates.length){const rs=[];for(const k in H.s){const a=H.s[k][2][di],b=H.s[k][2][di+5];if(a&&b)rs.push(b/a-1)}rs.sort((x,y)=>x-y);const md=rs[Math.floor(rs.length/2)];p.rres=(fut/p.px-1)>md?1:-1}}
   if(ch)saveP(P);return P;
 }
 
@@ -308,7 +295,7 @@ function renderStock(){
   box.innerHTML=`<h2>${esc(isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n)} <span class="sub">${code}${S.m==="o"?tt(" · 上櫃"," · OTC"):isUS()?tt(" · 美股"," · US"):""}</span></h2>
     <div class="pdprice"><b>${isUS()?"$":""}${fmt(S.c[t])}</b> <span class="${chg>0?"up":chg<0?"down":"flat"}">${pct(chg)}</span> <span class="sub">${S.d[t].slice(5).replace("-","/")} ${tt("收盤","close")}</span></div>
     ${window.klineHTML?klineHTML("pdKl"):spark(S)}
-    ${callHTML(S,t,F)}
+    ${callHTML(S,t,F,code)}
     ${window.leadersHTML&&leadersHTML(code)?`<details class="pdlead"><summary>🧭 ${tt("公司遠見、策略和執行長","Vision, strategy & leadership")}</summary>${leadersHTML(code)}</details>`:""}
     <div class="sub" style="margin-top:10px">${tt("各方法的分數（模型的根據）","Scores by method (what the model uses)")}</div>${summary(V,F,confOf(V,B))}
     <div class="pdhead"><div>${gauge(V.score,V.cl)}</div><div>
@@ -321,18 +308,18 @@ function renderStock(){
         :`<div class="pdbtn"><button data-g="1" class="up">${tt("📈 漲","📈 Up")}</button><button data-g="-1" class="down">${tt("📉 跌","📉 Down")}</button></div>`}
     </div>`;
   box.querySelectorAll(".pdbtn button").forEach(b=>b.onclick=()=>{
-    const P=loadP();P.push({m:MK,c:code,n:isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n,d:S.d[t],px:S.c[t],me:+b.dataset.g,model:(MODEL[MK]&&MODEL[MK].w?(p=>p>=.55?1:p<=.45?-1:0)(predictP(MODEL[MK].w,vec(F))):Math.sign(V.score))||0,res:null});saveP(P);renderStock();renderLog();
+    const P=loadP();P.push({m:MK,c:code,n:isUS()&&(window.US_ZH||{})[code]?window.US_ZH[code]:S.n,d:S.d[t],px:S.c[t],me:+b.dataset.g,mr:(predOf(MK,code)||{call:0}).call,res:null});saveP(P);renderStock();renderLog();
   });
   if(window.drawKline)drawKline("pdKl",klineSeries(H,code),{cur:isUS()?"$":""});
   setTimeout(()=>box.querySelectorAll(".pdn").forEach(n=>n.classList.add("go")),60);
 }
 function renderLog(){
   const P=checkP(),done=P.filter(p=>p.res!=null&&p.res!==0);
-  const me=done.filter(p=>p.me===p.res).length,mdl=done.filter(p=>p.model!==0),mh=mdl.filter(p=>p.model===p.res).length;
+  const me=done.filter(p=>p.me===p.res).length,mdl=done.filter(p=>p.mr!=null?(p.mr!==0&&p.rres!=null):p.model!==0),mh=mdl.filter(p=>p.mr!=null?p.mr===p.rres:p.model===p.res).length;
   $("pdLog").innerHTML=!P.length?`<p class="hint">${tt("還沒有紀錄。在上面選一檔股票、按「漲」或「跌」，5 個交易日後這裡會自動對答案。","No guesses yet. Pick a stock above and tap Up or Down; it's checked here after 5 trading days.")}</p>`
     :`<div class="grid"><div class="stat"><div class="sub">${tt("你的命中率","Your hit rate")}</div><b class="big2">${done.length?fmt(me/done.length*100,0)+"%":"—"}</b><div class="sub">${me}/${done.length}</div></div>
-      <div class="stat"><div class="sub">${tt("預測分數的命中率","Score's hit rate")}</div><b class="big2">${mdl.length?fmt(mh/mdl.length*100,0)+"%":"—"}</b><div class="sub">${mh}/${mdl.length}</div></div></div>
-      <div class="pdrows">${P.slice().reverse().slice(0,20).map(p=>`<div><span>${esc(p.n)}</span><span class="sub">${p.d.slice(5).replace("-","/")}</span><span>${tt("你","You")} ${p.me>0?"📈":"📉"} · ${tt("分數","Score")} ${p.model>0?"📈":p.model<0?"📉":"➖"}</span><b class="${p.res==null?"flat":p.res>0?"up":p.res<0?"down":"flat"}">${p.res==null?tt("等待中","Waiting"):(p.res>0?tt("漲了","Rose"):p.res<0?tt("跌了","Fell"):tt("平盤","Flat"))+(p.res!=null&&p.res===p.me?" ✅":p.res!=null&&p.res!==0?" ❌":"")}</b></div>`).join("")}</div>`;
+      <div class="stat"><div class="sub">${tt("模型命中率（比大盤強或弱）","Model hit rate (vs market)")}</div><b class="big2">${mdl.length?fmt(mh/mdl.length*100,0)+"%":"—"}</b><div class="sub">${mh}/${mdl.length}</div></div></div>
+      <div class="pdrows">${P.slice().reverse().slice(0,20).map(p=>`<div><span>${esc(p.n)}</span><span class="sub">${p.d.slice(5).replace("-","/")}</span><span>${tt("你","You")} ${p.me>0?"📈":"📉"} · ${tt("模型","Model")} ${p.mr!=null?(p.mr>0?"💪":p.mr<0?"🐢":"➖"):(p.model>0?"📈":p.model<0?"📉":"➖")}</span><b class="${p.res==null?"flat":p.res>0?"up":p.res<0?"down":"flat"}">${p.res==null?tt("等待中","Waiting"):(p.res>0?tt("漲了","Rose"):p.res<0?tt("跌了","Fell"):tt("平盤","Flat"))+(p.res!=null&&p.res===p.me?" ✅":p.res!=null&&p.res!==0?" ❌":"")}</b></div>`).join("")}</div>`;
 }
 function search(q){
   q=q.trim().toLowerCase();if(!q||!H){$("pdSug").innerHTML="";return}
@@ -349,7 +336,7 @@ async function ensure(){
   $("pdInfo").textContent=tt(`${isUS()?"美股":"台股"}歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔 · 更新 ${H.updatedAt||""}`,`History: ${H.dates.length} trading days, ${Object.keys(H.s).length} stocks · updated ${H.updatedAt||""}`);
   if(!code||!H.s[code]){const L=pickList();code=L.length?L[0][0]:null}
   renderMarket();renderPicks();renderStock();renderLog();renderRank();syncMk();
-  if(!MODEL[MK]){const m=MK;trainModel(()=>{if(m===MK)renderStock()})}
+  if(!PRED[MK]){const m=MK;loadPred(m).then(()=>{if(m===MK&&H)renderStock()})}
 }
 document.addEventListener("click",e=>{const b=e.target.closest(".pdlearn,.pdtile");if(!b)return;e.preventDefault();window.openLesson&&openLesson(b.dataset.l)});
 /* 小教室示範：用目前選的股票真的數字 */
@@ -380,18 +367,19 @@ function renderRank(){
     const last=H.dates[H.dates.length-1],all=[];
     for(const c in H.s){const S=series(c);if(!S||S.c.length<22||S.d[S.d.length-1]!==last)continue;
       const t=S.c.length-1,va=avg(S.v.slice(t-19,t+1));if(va<1000)continue;
-      const V=verdict(factors(S,t,false));all.push({c,n:S.n,sc:V.score,cl:V.cl})}
-    all.sort((a,b)=>b.sc-a.sc);rankCache={up:all.filter(x=>x.sc>=15).slice(0,5),dn:all.filter(x=>x.sc<=-15).slice(-5).reverse(),n:all.length,
-      upN:all.filter(x=>x.sc>=15).length,dnN:all.filter(x=>x.sc<=-15).length};
+      const Q=predOf(MK,c);if(PRED[MK]){if(!Q)continue;const sc=Math.round((Q.p-.5)*200);all.push({c,n:S.n,sc,cl:sc>=10?"up":sc<=-10?"down":"flat"})}
+      else{const V=verdict(factors(S,t,false));all.push({c,n:S.n,sc:V.score,cl:V.cl})}}
+    all.sort((a,b)=>b.sc-a.sc);const th=PRED[MK]?10:15;rankCache={up:all.filter(x=>x.sc>=th).slice(0,5),dn:all.filter(x=>x.sc<=-th).slice(-5).reverse(),n:all.length,
+      upN:all.filter(x=>x.sc>=th).length,dnN:all.filter(x=>x.sc<=-th).length,pm:!!PRED[MK]};
   }
   const R=rankCache,mid=R.n-R.upN-R.dnN,row=x=>`<button data-c="${x.c}"><span>${esc(x.n)} <span class="sub">${x.c}</span></span>${bar(x.sc/50)}<b class="${x.cl}">${x.sc>0?"+":""}${x.sc}</b></button>`;
   $("pdRank").innerHTML=`<div class="pdratio"><span class="upbg" style="flex:${R.upN||0.01}">▲ ${R.upN}</span><span class="midbg" style="flex:${mid||0.01}">◆ ${mid}</span><span class="dnbg" style="flex:${R.dnN||0.01}">▼ ${R.dnN}</span></div>
-    <p class="sub" style="margin:6px 0 10px">${tt(`成交量夠大的 ${R.n} 檔裡：${R.upN} 檔偏漲、${mid} 檔看不出來、${R.dnN} 檔偏跌（不含大盤分數）。點一檔可以看詳細。`,`Of ${R.n} liquid stocks: ${R.upN} lean up, ${mid} unclear, ${R.dnN} lean down (market factor excluded). Tap one for details.`)}</p>
-    <div class="pdrk"><div><b class="up">▲ ${tt("分數最高","Highest")}</b>${R.up.map(row).join("")||`<p class="sub">—</p>`}</div><div><b class="down">▼ ${tt("分數最低","Lowest")}</b>${R.dn.map(row).join("")||`<p class="sub">—</p>`}</div></div>`;
+    <p class="sub" style="margin:6px 0 10px">${R.pm?tt(`成交量夠大的 ${R.n} 檔裡，模型認為：${R.upN} 檔會比大盤強、${mid} 檔差不多、${R.dnN} 檔會比大盤弱。點一檔可以看詳細。`,`Of ${R.n} liquid stocks: ${R.upN} likely beat the market, ${mid} about even, ${R.dnN} likely lag.`):tt(`成交量夠大的 ${R.n} 檔裡：${R.upN} 檔偏漲、${mid} 檔看不出來、${R.dnN} 檔偏跌（不含大盤分數）。點一檔可以看詳細。`,`Of ${R.n} liquid stocks: ${R.upN} lean up, ${mid} unclear, ${R.dnN} lean down (market factor excluded). Tap one for details.`)}</p>
+    <div class="pdrk"><div><b class="up">▲ ${R.pm?tt("最可能比大盤強","Most likely to beat"):tt("分數最高","Highest")}</b>${R.up.map(row).join("")||`<p class="sub">—</p>`}</div><div><b class="down">▼ ${R.pm?tt("最可能比大盤弱","Most likely to lag"):tt("分數最低","Lowest")}</b>${R.dn.map(row).join("")||`<p class="sub">—</p>`}</div></div>`;
   $("pdRank").querySelectorAll("button[data-c]").forEach(b=>b.onclick=()=>choose(b.dataset.c));
 }
 function syncMk(){document.querySelectorAll("#pdMk button").forEach(b=>b.classList.toggle("on",b.dataset.m===MK))}
-function setMarket(m){if(m===MK)return;CODE[MK]=code;MK=m;H=CACHE[m];code=CODE[m];rankCache=null;medCache={};syncMk();
+function setMarket(m){if(m===MK)return;CODE[MK]=code;MK=m;H=CACHE[m];code=CODE[m];rankCache=null;medCache={};syncMk();if(!PRED[m])loadPred(m).then(()=>{if(m===MK&&H){rankCache=null;renderStock();renderRank()}});
   $("pdSug").innerHTML="";$("pdQ").value="";$("pdQ").placeholder=m==="us"?tt("搜尋美股代號或名稱（例如 ANT、輝達）","Search US ticker or name"):tt("搜尋股票代號或名稱","Search code or name");
   renderMarket();if(H){if(!code||!H.s[code]){const L=pickList();code=L.length?L[0][0]:null}$("pdInfo").textContent=tt(`${m==="us"?"美股":"台股"}歷史資料：${H.dates.length} 個交易日、${Object.keys(H.s).length} 檔 · 更新 ${H.updatedAt||""}`,`${H.dates.length} days, ${Object.keys(H.s).length} stocks`);renderPicks();renderStock();renderLog();renderRank();if(!MODEL[MK])trainModel(()=>renderStock())}else ensure()}
 document.addEventListener("click",e=>{const b=e.target.closest("#pdMk button");if(b)setMarket(b.dataset.m)});
@@ -409,10 +397,10 @@ window.predictCard=async function(mk,c,elId){
   const sv=[H,MK];H=D;MK=mk;let html="";
   try{const S=series(c),t=S.c.length-1;
     if(S.c.length<22)html=`<p class="sub">${tt(`這檔目前只有 ${S.c.length} 天的資料，至少要 22 天才能預測。`,`Only ${S.c.length} days of data; 22 needed.`)}</p>`;
-    else{const F=factors(S,t,true),V=verdict(F);html=callHTML(S,t,F)+`<p class="sub" style="margin:6px 0 0">${tt(`各方法加起來的分數：<b class="${V.cl}">${V.score>0?"+":""}${V.score}</b>／100。想看每個方法怎麼說，按下面的「看預測分析」。`,`Combined method score: ${V.score}/100. Tap Prediction below for details.`)}</p>`}
+    else{const F=factors(S,t,true),V=verdict(F);html=callHTML(S,t,F,c)+`<p class="sub" style="margin:6px 0 0">${tt(`各方法加起來的分數：<b class="${V.cl}">${V.score>0?"+":""}${V.score}</b>／100。想看每個方法怎麼說，按下面的「看預測分析」。`,`Combined method score: ${V.score}/100. Tap Prediction below for details.`)}</p>`}
   }finally{H=sv[0];MK=sv[1]}
   el().innerHTML=html;
-  if(!MODEL[mk])trainModel(()=>window.predictCard(mk,c,elId),mk,D);
+  if(!PRED[mk])loadPred(mk).then(x=>{if(x)window.predictCard(mk,c,elId)});
 };
 window.klineData=getData;
 window.predictRender=function(){

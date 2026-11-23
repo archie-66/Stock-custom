@@ -11,7 +11,9 @@ from datetime import datetime, timedelta
 from update import get, num, tables, col, TW, BASE
 
 FILE = "hist.json"
-KEEP = 60          # 保留幾個交易日
+KEEP = 60          # 手機用的 hist.json 保留幾個交易日
+KEEP_TRAIN = 250   # 訓練模型用的 train-tw.json 保留比較久（不放在網站上，存在 GitHub 的快取裡）
+TRAIN = "train-tw.json"
 BACKFILL = int(os.environ.get("BACKFILL", "12"))
 TOP = 700          # 只保留成交金額前 700 名（加上原本就有的），檔案才不會太大
 
@@ -91,7 +93,7 @@ def main():
     now = datetime.now(TW)
     H = {"dates": [], "skip": [], "s": {}}
     try:  # 讀進緊湊格式，轉回 {日期: 值}
-        old = json.load(open(FILE, encoding="utf-8"))
+        old = json.load(open(TRAIN if os.path.exists(TRAIN) else FILE, encoding="utf-8"))
         if old.get("ver") != 2:  # 舊格式沒有開高低，全部重新抓一次
             raise ValueError("舊版歷史檔，重新建立（加入開盤、最高、最低）")
         H["dates"], H["skip"] = old.get("dates", []), old.get("skip", [])
@@ -108,8 +110,8 @@ def main():
     # 要處理的日子：今天（收盤後）＋往回的平日
     todo = []
     d = now if now.hour * 60 + now.minute >= 14 * 60 + 30 else now - timedelta(days=1)
-    for _ in range(130):
-        if len(todo) >= BACKFILL or len(have) + len(todo) >= KEEP:
+    for _ in range(400):
+        if len(todo) >= BACKFILL or len(have) + len(todo) >= KEEP_TRAIN:
             break
         ds = d.strftime("%Y-%m-%d")
         if d.weekday() < 5 and ds not in have and ds not in skip:
@@ -175,9 +177,9 @@ def main():
     if not changed:
         print("歷史資料不用更新")
         return 0
-    H["dates"] = sorted(set(H["dates"]))[-KEEP:]
+    H["dates"] = sorted(set(H["dates"]))[-KEEP_TRAIN:]
     keepd = set(H["dates"])
-    H["skip"] = sorted(set(H["skip"]))[-80:]
+    H["skip"] = sorted(set(H["skip"]))[-200:]
     for code in list(H["s"].keys()):
         e = H["s"][code]
         for k in ("c", "v", "f", "o", "h", "l"):
@@ -187,17 +189,21 @@ def main():
             del H["s"][code]
     H["updatedAt"] = now.strftime("%Y-%m-%d %H:%M")
     # 緊湊格式：每檔的陣列和 dates 一一對齊，前端比較好算
-    out = {"dates": H["dates"], "skip": H["skip"], "updatedAt": H["updatedAt"], "s": {}}
-    for code, e in H["s"].items():
-        out["s"][code] = [e["n"], e["m"],
-                          [e["c"].get(d) for d in H["dates"]],
-                          [e["v"].get(d) for d in H["dates"]],
-                          [e["f"].get(d) for d in H["dates"]] if e["f"] else None,
-                          [e.get("o", {}).get(d) for d in H["dates"]],
-                          [e.get("h", {}).get(d) for d in H["dates"]],
-                          [e.get("l", {}).get(d) for d in H["dates"]]]
-    out["ver"] = 2
-    json.dump(out, open(FILE, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    def pack(dates):
+        out = {"dates": dates, "skip": H["skip"], "updatedAt": H["updatedAt"], "s": {}, "ver": 2}
+        for code, e in H["s"].items():
+            cs = [e["c"].get(d) for d in dates]
+            if all(x is None for x in cs):
+                continue
+            out["s"][code] = [e["n"], e["m"], cs,
+                              [e["v"].get(d) for d in dates],
+                              [e["f"].get(d) for d in dates] if any(d in e["f"] for d in dates) else None,
+                              [e.get("o", {}).get(d) for d in dates],
+                              [e.get("h", {}).get(d) for d in dates],
+                              [e.get("l", {}).get(d) for d in dates]]
+        return out
+    json.dump(pack(H["dates"]), open(TRAIN, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    json.dump(pack(H["dates"][-KEEP:]), open(FILE, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     print("歷史資料：", len(H["dates"]), "天，", len(H["s"]), "檔")
     return 0
 

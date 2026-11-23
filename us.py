@@ -64,13 +64,13 @@ def fetch(url, tries=2):
 
 
 def yahoo(sym):
-    t = fetch(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?range=6mo&interval=1d")
+    t = fetch(f"https://query1.finance.yahoo.com/v8/finance/chart/{sym}?range=2y&interval=1d")
     try:
         r = json.loads(t)["chart"]["result"][0]
         ts, q = r.get("timestamp") or [], r["indicators"]["quote"][0]
         mt = r["meta"]
         name = mt.get("shortName") or mt.get("longName") or sym
-        META[sym] = {"ln": mt.get("longName") or name, "hi": mt.get("fiftyTwoWeekHigh"), "lo": mt.get("fiftyTwoWeekLow"), "ex": mt.get("fullExchangeName") or mt.get("exchangeName")}
+        META[sym] = {"ln": mt.get("longName") or name, "hi": mt.get("fiftyTwoWeekHigh"), "lo": mt.get("fiftyTwoWeekLow"), "ex": mt.get("fullExchangeName") or mt.get("exchangeName"), "ty": mt.get("instrumentType")}
         rows = []
         for i, s in enumerate(ts):
             c = q["close"][i]
@@ -250,6 +250,20 @@ def main():
             META[k]["sec"] = sec
     out["meta"] = {k: v for k, v in META.items() if k in out["s"]}
     json.dump(out, open("us.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+    # 用 2 年的資料訓練預測模型（只存結果 pred-us.json，2 年的資料不放網站）
+    try:
+        import model
+        alld = sorted({r[0] for k, rows in data.items() if not k.startswith("^") for r in rows})
+        full = {"dates": alld, "s": {}, "etf": [k for k, v in META.items() if v.get("ty") in ("ETF", "MUTUALFUND", "INDEX")]}
+        for k, rows in data.items():
+            if k.startswith("^"):
+                continue
+            m = {r[0]: r[1:] for r in rows}; E = (None,) * 5
+            g = lambda j: [(m.get(d, E) + E)[j] for d in alld]
+            full["s"][k] = [names[k], "us", g(0), g(1), None, g(2), g(3), g(4)]
+        model.run(full, "us")
+    except Exception as e:
+        print("模型訓練失敗", e)
     bulk_news()
     nw = {"updatedAt": out["updatedAt"], "n": {}}
     for tk in out["s"]:

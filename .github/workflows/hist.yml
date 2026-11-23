@@ -13,20 +13,36 @@ concurrency:
 jobs:
   hist:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 100
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: 一次補齊 60 個交易日（含開盤、最高、最低）
-        run: BACKFILL=90 python hist.py
+      - name: 拿出訓練用的長期資料
+        uses: actions/cache/restore@v4
+        with:
+          path: train-tw.json
+          key: train-tw-${{ github.run_id }}
+          restore-keys: train-tw-
+      - name: 一次補齊大約 1 年的交易日（含開盤、最高、最低）
+        run: BACKFILL=260 python hist.py
+      - name: 存回快取
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: train-tw.json
+          key: train-tw-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: 訓練預測模型
+        run: |
+          pip install -q numpy pandas scikit-learn
+          python model.py tw || echo "模型訓練失敗"
       - name: 存檔
         run: |
           git config user.name "stock-bot"
           git config user.email "stock-bot@users.noreply.github.com"
-          if [ -n "$(git status --porcelain hist.json)" ]; then
-            git add hist.json
+          if [ -n "$(git status --porcelain hist.json pred-tw.json)" ]; then
+            git add hist.json pred-tw.json
             git commit -q -m "重建預測歷史資料（含 K 線） $(TZ=Asia/Taipei date '+%F %H:%M')"
             for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push -q && break; sleep 5; done
           fi
