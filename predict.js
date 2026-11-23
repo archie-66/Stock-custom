@@ -160,7 +160,8 @@ const WHY={r1:[["今天漲比較多","今天跌比較多"],["Up a lot today","Do
   ush:[["上影線長（上面有賣壓）","幾乎沒有上影線"],["Long upper shadow","No upper shadow"]],lsh:[["下影線長（下面有買盤）","幾乎沒有下影線"],["Long lower shadow","No lower shadow"]],
   inst:[["外資投信在買","外資投信在賣"],["Institutions buying","Institutions selling"]],dhi:[["離一個月高點近","離一個月高點遠"],["Close to 1-month high","Far from 1-month high"]]};
 async function loadPred(mk){if(PRED[mk])return PRED[mk];try{const r=await fetch(`pred-${mk}.json?t=`+Date.now(),{cache:"no-store"});if(r.ok)PRED[mk]=await r.json()}catch(e){}return PRED[mk]}
-function predOf(mk,c){const M=PRED[mk];if(!M||!M.p||M.p[c]==null)return null;const p=M.p[c];return {p,call:p>=.55?1:p<=.45?-1:0}}
+const useP=()=>!!PRED[MK]&&!(PRED[MK].acc!=null&&PRED[MK].acc<.52);
+function predOf(mk,c){const M=PRED[mk];if(!M||!M.p||M.p[c]==null)return null;const p=M.p[c],weak=M.acc!=null&&M.acc<.52;return {p,weak,call:weak?0:p>=.55?1:p<=.45?-1:0}}
 function callHTML(S,t,F,c){
   c=c||code;const M=PRED[MK];
   if(!M)return `<div class="pdcall flat"><div class="sub">🔮 ${tt("我的預測","My call")}</div><p class="sub">${tt("預測結果還在準備中（每天收盤後在 GitHub 上訓練一次）。","Predictions are being prepared (trained daily after the close).")}</p></div>`;
@@ -170,7 +171,7 @@ function callHTML(S,t,F,c){
   const rng=`<div class="pdrg">${tt(`${hz} 個交易日後可能的價格範圍（大約 3 次有 2 次會落在這裡）`,`Likely price range in ${hz} trading days (about 2 in 3 chance)`)}<br><b>${cur}${fmt(lo)} ～ ${cur}${fmt(hi)}</b></div>`;
   if(!Q)return `<div class="pdcall flat"><div class="sub">🔮 ${tt("我的預測","My call")}</div><p class="sub">${(MK==="tw"&&/^0/.test(c))||(MK==="us"&&H&&H.meta&&H.meta[c]&&/ETF|FUND/.test(H.meta[c].ty||""))?tt("這是 ETF 或基金（一籃子股票、債券），不是單一公司，所以不做「比大盤強或弱」的預測。","ETFs and funds aren't predicted."):tt("這檔今天沒有預測（資料太少或今天沒有交易）。","No prediction for this stock today.")}</p>${rng}</div>`;
   const p=Q.p,cl=Q.call>0?"up":Q.call<0?"down":"flat";
-  const word=Q.call>0?tt("💪 會比大盤強","💪 Likely to beat the market"):Q.call<0?tt("🐢 會比大盤弱","🐢 Likely to lag the market"):tt("🤷 跟大盤差不多","🤷 About the same as the market");
+  const word=Q.weak?tt("🤷 猜不出來","🤷 Can't tell"):Q.call>0?tt("💪 會比大盤強","💪 Likely to beat the market"):Q.call<0?tt("🐢 會比大盤弱","🐢 Likely to lag the market"):tt("🤷 跟大盤差不多","🤷 About the same as the market");
   const W=(M.why&&M.why[c])||[];
   const why=W.length?`<div class="pdwhy"><div class="sub">${tt("主要根據","Main reasons")}</div>${W.map(([k,side,eff])=>WHY[k]?`<div><span class="${eff>0?"up":"down"}">${eff>0?"▲":"▼"}</span>${tt(WHY[k][0][side>0?0:1],WHY[k][1][side>0?0:1])}</div>`:"").join("")}</div>`:"";
   const acc=M.acc,f=(M.folds||[]).filter(x=>x!=null),fmin=f.length?Math.min(...f):null,fmax=f.length?Math.max(...f):null;
@@ -180,7 +181,7 @@ function callHTML(S,t,F,c){
     <div class="sub">🔮 ${tt(`我的預測：接下來 ${hz} 個交易日${hz>=20?"（大約 1 個月）":"（大約 1 週）"}，跟所有股票比`,`My call: next ${hz} trading days, vs all stocks`)}</div>
     <div class="pdcw">${word}</div>
     <div class="pdpb"><span>${tt("贏過大盤的機率","Chance to beat the market")}</span><div class="bar"><i style="width:${(p*100).toFixed(0)}%"></i><em style="left:50%"></em></div><b>${fmt(p*100,0)}%</b></div>
-    ${why}${rng}
+    ${Q.weak?`<p class="pdwarn2">⚠️ ${tt("這個市場的模型考試沒有比亂猜好，所以不給方向，下面的機率和原因只能當參考。","The model doesn't beat guessing in this market, so no direction is given.")}</p>`:why}${rng}
     ${acc!=null?`<div class="pdex">📝 ${tt(`模型考試成績：每次只用「當時以前」的資料訓練，再猜後面沒看過的日子，總共考了 ${M.nTest.toLocaleString()} 次，猜對 <b>${fmt(acc*100,0)}%</b>（亂猜是 50%）。${f.length>1?`不同時間段的成績在 ${fmt(fmin*100,0)}%～${fmt(fmax*100,0)}% 之間。`:""}結論：<b>${grade}</b>。`,`Walk-forward test: ${M.nTest.toLocaleString()} unseen cases, <b>${fmt(acc*100,0)}%</b> right vs 50% guessing${f.length>1?` (ranging ${fmt(fmin*100,0)}–${fmt(fmax*100,0)}% across periods)`:""}: <b>${grade}</b>.`)}</div>`:""}
     <details class="pdwhyq"><summary>${tt("為什麼不直接猜漲還是跌？","Why not predict up or down?")}</summary><p>${tt("我們拿過去的資料測過：一檔股票接下來漲或跌，主要是跟著整個市場一起動，只看這檔股票自己的價格和成交量猜不出來，考試成績比亂猜還差。但「這檔會比其他股票強還是弱」是猜得出一點的。所以這裡告訴你它比大盤強還是弱：如果大盤漲，比較強的通常漲更多；如果大盤跌，比較強的通常跌比較少。","We tested it: whether a stock rises over 5 days mostly follows the whole market, and the model couldn't beat guessing. Whether it beats other stocks is somewhat predictable, so that's what we show.")}</p></details>
   </div>`;
@@ -367,10 +368,10 @@ function renderRank(){
     const last=H.dates[H.dates.length-1],all=[];
     for(const c in H.s){const S=series(c);if(!S||S.c.length<22||S.d[S.d.length-1]!==last)continue;
       const t=S.c.length-1,va=avg(S.v.slice(t-19,t+1));if(va<1000)continue;
-      const Q=predOf(MK,c);if(PRED[MK]){if(!Q)continue;const sc=Math.round((Q.p-.5)*200);all.push({c,n:S.n,sc,cl:sc>=10?"up":sc<=-10?"down":"flat"})}
+      const Q=predOf(MK,c);if(useP()){if(!Q)continue;const sc=Math.round((Q.p-.5)*200);all.push({c,n:S.n,sc,cl:sc>=10?"up":sc<=-10?"down":"flat"})}
       else{const V=verdict(factors(S,t,false));all.push({c,n:S.n,sc:V.score,cl:V.cl})}}
-    all.sort((a,b)=>b.sc-a.sc);const th=PRED[MK]?10:15;rankCache={up:all.filter(x=>x.sc>=th).slice(0,5),dn:all.filter(x=>x.sc<=-th).slice(-5).reverse(),n:all.length,
-      upN:all.filter(x=>x.sc>=th).length,dnN:all.filter(x=>x.sc<=-th).length,pm:!!PRED[MK]};
+    all.sort((a,b)=>b.sc-a.sc);const th=useP()?10:15;rankCache={up:all.filter(x=>x.sc>=th).slice(0,5),dn:all.filter(x=>x.sc<=-th).slice(-5).reverse(),n:all.length,
+      upN:all.filter(x=>x.sc>=th).length,dnN:all.filter(x=>x.sc<=-th).length,pm:useP()};
   }
   const R=rankCache,mid=R.n-R.upN-R.dnN,row=x=>`<button data-c="${x.c}"><span>${esc(x.n)} <span class="sub">${x.c}</span></span>${bar(x.sc/50)}<b class="${x.cl}">${x.sc>0?"+":""}${x.sc}</b></button>`;
   $("pdRank").innerHTML=`<div class="pdratio"><span class="upbg" style="flex:${R.upN||0.01}">▲ ${R.upN}</span><span class="midbg" style="flex:${mid||0.01}">◆ ${mid}</span><span class="dnbg" style="flex:${R.dnN||0.01}">▼ ${R.dnN}</span></div>
