@@ -25,9 +25,9 @@ HOSTS = ["https://mopsov.twse.com.tw", "https://mops.twse.com.tw"]
 
 
 def fetch(url):
-    for k in range(3):
+    for k in range(2):
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=40) as r:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r:
                 b = r.read()
             for enc in ("big5", "cp950", "utf-8"):
                 try:
@@ -37,8 +37,8 @@ def fetch(url):
             return b.decode("utf-8", "ignore")
         except Exception as e:
             last = e
-            time.sleep(3 + 4 * k)
-    print("抓不到", url, last)
+            time.sleep(3)
+    print("抓不到", url, last, flush=True)
     return ""
 
 
@@ -58,6 +58,7 @@ def month(y, m, kind):
             t = fetch(f"{host}/nas/t21/{kind}/t21sc03_{roc}_{m}{sfx}")
             if "公司代號" not in t:
                 continue
+            print(" ", kind, f"{y}-{m}", len(t), "字", flush=True)
             out = {}
             for row in re.findall(r"<tr[^>]*>(.*?)</tr>", t, re.S):
                 tds = re.findall(r"<td[^>]*>(.*?)</td>", row, re.S)
@@ -93,7 +94,7 @@ def main():
         got = {}
         for kind in ("sii", "otc"):
             got.update(month(y, m, kind)); time.sleep(2)
-        print(key, len(got), "家")
+        print(key, len(got), "家", flush=True)
         if got:
             R[key] = got
     R = dict(sorted(R.items())[-26:])

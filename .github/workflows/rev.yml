@@ -16,7 +16,7 @@ jobs:
         with:
           python-version: "3.12"
       - name: 補 20 個月的月營收
-        run: MONTHS=20 python revenue.py
+        run: MONTHS=20 python -u revenue.py
       - uses: actions/cache/restore@v4
         with:
           path: train-tw.json
