@@ -80,13 +80,14 @@ jobs:
           key: news-sent-${{ github.run_id }}-${{ github.run_attempt }}
       - name: 訓練預測模型
         run: |
+          python revenue.py || echo "月營收更新失敗"
           pip install -q numpy pandas scikit-learn
           python model.py tw || echo "模型訓練失敗"
       - name: 存檔
         run: |
-          git add pred-tw.json 2>/dev/null || true
-          if [ -n "$(git status --porcelain hist.json pred-tw.json)" ]; then
-            git add hist.json pred-tw.json
+          git add pred-tw.json rev-tw.json 2>/dev/null || true
+          if [ -n "$(git status --porcelain hist.json pred-tw.json rev-tw.json)" ]; then
+            git add hist.json pred-tw.json; git add rev-tw.json 2>/dev/null || true
             git commit -q -m "更新預測歷史資料 $(TZ=Asia/Taipei date '+%F %H:%M')"
             git pull -q --rebase origin main && git push -q || echo "push 失敗"
           fi

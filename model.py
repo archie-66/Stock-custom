@@ -26,8 +26,9 @@ from sklearn.linear_model import LogisticRegression
 H = 5
 HS = (5, 20)  # 試兩種：5 個交易日（大約 1 週）、20 個交易日（大約 1 個月），選考得比較好的
 NEWS_F = ["nn3", "ns3", "ns1"]
+REV_F = ["ryoy", "racc", "ryoy3", "rmom"]
 BASE_F = ["r1", "r5", "r10", "r20", "r60", "g5", "g20", "slope", "rsi", "vol", "vr", "vr5", "pos", "body", "ush", "lsh", "inst", "dhi"]
-FEATS = BASE_F + NEWS_F
+FEATS = BASE_F + NEWS_F + REV_F
 # 用簡單的話說明每個數字（給手機畫面顯示「主要根據」）
 WHY = {
     "r1": ("今天漲比較多", "今天跌比較多"), "r5": ("近 5 天漲比較多", "近 5 天跌比較多"),
@@ -39,6 +40,8 @@ WHY = {
     "pos": ("接近一個月的最高價", "接近一個月的最低價"), "body": ("今天收紅 K（收盤比開盤高）", "今天收黑 K（收盤比開盤低）"),
     "ush": ("上影線長（上面有賣壓）", "沒有上影線"), "lsh": ("下影線長（下面有買盤）", "沒有下影線"),
     "inst": ("外資投信在買", "外資投信在賣"), "dhi": ("離一個月高點近", "離一個月高點遠"),
+    "ryoy": ("最新月營收比去年成長多", "最新月營收比去年成長少或衰退"), "racc": ("營收成長在加速", "營收成長在變慢"),
+    "ryoy3": ("近 3 個月營收成長多", "近 3 個月營收成長少"), "rmom": ("營收比上個月多", "營收比上個月少"),
     "nn3": ("最近新聞很多", "最近幾乎沒新聞"), "ns3": ("近 3 天新聞偏好消息", "近 3 天新聞偏壞消息"), "ns1": ("今天新聞偏好消息", "今天新聞偏壞消息"),
 }
 
@@ -75,7 +78,48 @@ def mk_of(code):
     return "tw" if code[:1].isdigit() else "us"
 
 
-def features(D, NA=None):
+def rev_arrays(D):
+    """每個交易日能看到的最新月營收：第 M 月的營收當作 M+1 月 11 號才知道"""
+    import os
+    if not os.path.exists("rev-tw.json"):
+        return {}
+    RV = json.load(open("rev-tw.json", encoding="utf-8"))
+    months = sorted(RV)
+    if len(months) < 4:
+        return {}
+    def avail(mo):
+        y, m = map(int, mo.split("-")); m += 1
+        if m == 13:
+            y, m = y + 1, 1
+        return f"{y}-{m:02d}-11"
+    dates = D["dates"]; n = len(dates); out = {}
+    # 每個交易日 → 最新可用月份的索引
+    idx = []; j = -1
+    for d in dates:
+        while j + 1 < len(months) and avail(months[j + 1]) <= d:
+            j += 1
+        idx.append(j)
+    codes = set().union(*[set(RV[m]) for m in months])
+    for c in codes:
+        yoy = [RV[m].get(c, [None, None, None])[2] for m in months]
+        mom = [RV[m].get(c, [None, None, None])[1] for m in months]
+        a = np.full((4, n), np.nan)
+        for t, j in enumerate(idx):
+            if j < 0 or yoy[j] is None:
+                continue
+            clip = lambda v: max(-100.0, min(300.0, v))
+            a[0, t] = clip(yoy[j])
+            if j >= 1 and yoy[j - 1] is not None:
+                a[1, t] = clip(yoy[j]) - clip(yoy[j - 1])
+            w = [clip(v) for v in yoy[max(0, j - 2):j + 1] if v is not None]
+            a[2, t] = sum(w) / len(w) if w else np.nan
+            a[3, t] = clip(mom[j]) if mom[j] is not None else np.nan
+        out[c] = a
+    print("月營收：", len(months), "個月，", len(out), "家公司")
+    return out
+
+
+def features(D, NA=None, RA=None):
     """回傳 DataFrame：每一列是 (日期索引 t, 代號, 18 個數字, 5 天後漲跌幅)"""
     n = len(D["dates"]); out = []
     skip = set(D.get("etf", []))
@@ -111,6 +155,10 @@ def features(D, NA=None):
         cnt, sc = pd.Series(a[0]), pd.Series(a[1])
         x["nn3"] = np.log1p(cnt.rolling(3, min_periods=1).sum())
         x["ns3"] = sc.rolling(3, min_periods=1).sum(); x["ns1"] = sc
+        r = (RA or {}).get(code)
+        if r is None:
+            r = np.full((4, n), np.nan)
+        x["ryoy"], x["racc"], x["ryoy3"], x["rmom"] = r[0], r[1], r[2], r[3]
         x["t"] = np.arange(n); x["code"] = code
         x = x[np.isfinite(s["c"].values) & np.isfinite(x["r20"].values)]
         x = x[x["t"] >= 25]
@@ -132,7 +180,8 @@ def make(kind):
 
 def run(D, mk):
     NA, nfirst = news_arrays(D, mk)
-    X = features(D, NA)
+    RA = rev_arrays(D) if mk == "tw" else {}
+    X = features(D, NA, RA)
     R_all = ranked(X); nd = len(D["dates"])
     if nfirst is not None:
         print(mk, "新聞資料從第", nfirst, "個交易日開始，共", len(NA), "檔有新聞")
@@ -140,7 +189,10 @@ def run(D, mk):
     res = {}
     sets = {"base": BASE_F}
     if NA:
-        sets["news"] = FEATS
+        sets["news"] = BASE_F + NEWS_F
+    if RA:
+        sets["rev"] = BASE_F + REV_F
+        sets["all"] = FEATS
     for fs_name, fs in sets.items():
       R = R_all[fs].values
       for H in HS:

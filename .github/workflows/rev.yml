@@ -1,0 +1,43 @@
+name: 補月營收並重新訓練
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  rev:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 補 20 個月的月營收
+        run: MONTHS=20 python revenue.py
+      - uses: actions/cache/restore@v4
+        with:
+          path: train-tw.json
+          key: train-tw-${{ github.run_id }}
+          restore-keys: train-tw-
+      - uses: actions/cache/restore@v4
+        with:
+          path: news-sent.json
+          key: news-sent-${{ github.run_id }}
+          restore-keys: news-sent-
+      - name: 重新訓練台股模型（有營收、沒營收都考試）
+        run: |
+          pip install -q numpy pandas scikit-learn
+          python model.py tw
+          python -c "import json;P=json.load(open('pred-tw.json'));print('考試結果',P['tests'])"
+      - name: 存檔
+        run: |
+          git config user.name "stock-bot"
+          git config user.email "stock-bot@users.noreply.github.com"
+          git add rev-tw.json pred-tw.json
+          if [ -n "$(git status --porcelain --cached)" ]; then
+            git commit -q -m "加入月營收重新訓練台股模型 $(TZ=Asia/Taipei date '+%F %H:%M')"
+            for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push -q && break; sleep 5; done
+          fi
