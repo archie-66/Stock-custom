@@ -71,6 +71,7 @@ function renderSel(){
   const ipo=IPO[sel];
   box.innerHTML=`<h2>${esc(I.n)} <span class="sub">${sel}${I.n!==I.en?" · "+esc(I.en):""}</span></h2>
     <div class="pdprice"><b>$${fmt(I.c)}</b> <span class="${cl(I.ch)}">${pct(I.ch)}</span> <span class="sub">${I.date.slice(5).replace("-","/")} ${tt("收盤（美國時間）","close (US)")}</span></div>
+    <div class="lvrow" data-live-us="${sel}"></div>
     ${window.klineHTML?klineHTML("usKl"):spark(I.cs,320,90).replace('class="usp','class="usp big')}
     <div class="grid"><div class="stat"><div class="sub">${tt("近 20 天","Last 20 days")}</div><b class="${cl(I.r20)}">${pct(I.r20)}</b></div>
       <div class="stat"><div class="sub">${ipo?tt("比承銷價","vs IPO price"):tt("今天成交量","Volume today")}</div><b>${ipo?`<span class="${cl(I.c-ipo.px)}">${pct((I.c/ipo.px-1)*100)}</span>`:vs?fmt(vs,1)+tt(" 倍平常"," × normal"):"—"}</b></div></div>

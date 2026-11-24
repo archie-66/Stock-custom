@@ -84,7 +84,7 @@ function body(c){
   const s=(window.D&&D.stocks||[]).find(x=>x[0]===c),name=s?s[1]:(H&&H.s[c]?H.s[c][0]:c),I=INFO&&INFO[c];
   const meta=I?[I.i&&`<span class="ustag">${esc(I.i)}</span>`,I.m==="o"?tt("上櫃","OTC"):tt("上市","Listed"),I.f&&tt(`${I.f} 年成立`,`Founded ${I.f}`),I.l&&tt(`${I.l} 年掛牌`,`Listed ${I.l}`),I.c&&tt(`董事長 ${esc(I.c)}`,`Chair ${esc(I.c)}`)].filter(Boolean).join(" · "):"";
   const A=H?analysis(c):null,L=NW?((NW.n||{})[c]||[]):null;
-  return `<div class="top2"><div><h3>${esc(name)} <span class="sub">${c}</span></h3>${s?`<div class="sub">${tt("收盤","Close")} <b>${fmt(s[4])}</b> <span class="${s[5]>0?"up":s[5]<0?"down":"flat"}">${s[5]>0?"+":""}${fmt(s[5])}</span></div>`:""}</div><button class="x2">✕</button></div>
+  return `<div class="top2"><div><h3>${esc(name)} <span class="sub">${c}</span></h3>${s?`<div class="sub">${tt("收盤","Close")} <b>${fmt(s[4])}</b> <span class="${s[5]>0?"up":s[5]<0?"down":"flat"}">${s[5]>0?"+":""}${fmt(s[5])}</span></div>`:""}<div class="lvrow" data-live="${c}"></div></div><button class="x2">✕</button></div>
     <h3 class="ush">🕯️ ${tt("K 線圖","Candlestick chart")}</h3>
     ${H&&H.s[c]?(window.klineHTML?klineHTML("twKl"):""):`<p class="sub">${H?tt("這檔成交量比較小，沒有收錄歷史資料。","No history for this stock."):tt("讀取中…","Loading…")}</p>`}
     <h3 class="ush">🔮 ${tt("個股預測","Prediction")}</h3>

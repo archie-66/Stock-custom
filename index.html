@@ -743,6 +743,13 @@ footer a{color:var(--mute)}
 /* 我的預測卡＋公司領導人 */
 .tone{font-style:normal;font-size:11px;font-weight:700;margin-right:6px;padding:1px 6px;border-radius:999px;white-space:nowrap}.tone.up{color:var(--up);background:color-mix(in srgb,var(--up) 12%,transparent)}.tone.down{color:var(--down);background:color-mix(in srgb,var(--down) 12%,transparent)}
 .tonesum{font-size:12.5px;margin:2px 0 6px;color:var(--mute)}
+.liveBar{font-size:12.5px;margin:2px 0 6px;padding:6px 10px;border-radius:10px;background:color-mix(in srgb,var(--up) 8%,transparent);line-height:1.5}
+.lvdot{display:inline-block;width:8px;height:8px;border-radius:50%;background:#e5484d;margin-right:6px;vertical-align:middle;animation:lvp 1.6s infinite}
+@keyframes lvp{0%{box-shadow:0 0 0 0 rgba(229,72,77,.6)}70%{box-shadow:0 0 0 7px rgba(229,72,77,0)}100%{box-shadow:0 0 0 0 rgba(229,72,77,0)}}
+.lvup{animation:lvu .9s}.lvdn{animation:lvd .9s}
+@keyframes lvu{0%{background:color-mix(in srgb,var(--up) 35%,transparent)}100%{background:transparent}}
+@keyframes lvd{0%{background:color-mix(in srgb,var(--down) 35%,transparent)}100%{background:transparent}}
+.lvrow{font-size:13px;margin:4px 0 2px}
 .kl{margin:8px 0 4px}.klbar{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
 .klr{display:flex;gap:4px}.klr button{font:inherit;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);background:transparent;color:var(--mute)}
 .klr button.on{background:var(--ink);color:var(--bg);border-color:var(--ink)}
@@ -795,6 +802,7 @@ footer a{color:var(--mute)}
 <main class="pager" id="pager">
   <!-- 1 大盤 -->
   <section class="page" data-title="大盤"><div class="inner">
+    <div class="liveBar" data-mk="tw" hidden></div>
     <div class="card hero" style="--i:0">
       <div class="lab"><span class="pulse"></span><span class="term" data-t="加權指數">加權指數</span>（大盤）</div>
       <div class="big" id="idxBig">--</div>
@@ -870,6 +878,7 @@ footer a{color:var(--mute)}
 
   <!-- 4 個股 -->
   <section class="page" data-title="個股"><div class="inner">
+    <div class="liveBar" data-mk="tw" hidden></div>
     <div class="card" style="--i:0">
       <div class="hrow"><h2>自選股 <span class="sub" id="wlCount"></span></h2></div>
       <div id="watch"></div>
@@ -987,6 +996,7 @@ footer a{color:var(--mute)}
     </footer>
   </div></section>
   <section class="page" data-title="美股"><div class="inner">
+    <div class="liveBar" data-mk="us" hidden></div>
     <div class="card" style="--i:0"><h2>🇺🇸 美股大盤</h2><div id="usIdx"><p class="hint">讀取中…</p></div></div>
     <div class="card" style="--i:1"><h2>🆕 新上市</h2><div id="usAnt"></div></div>
     <div class="card" style="--i:2">
@@ -1493,6 +1503,7 @@ if("serviceWorker" in navigator&&location.hostname.endsWith("github.io")){naviga
 <script src="leaders_us.js"></script>
 <script src="leaders_tw.js"></script>
 <script src="kline.js"></script>
+<script src="live.js"></script>
 <script src="twx.js"></script>
 <script src="us_info.js"></script>
 <script src="usx.js"></script>

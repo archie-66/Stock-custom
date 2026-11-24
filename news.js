@@ -2,6 +2,9 @@
    以後每次加新功能，就在 NEWS 最上面加一筆（v 要換成新的、不一樣的代號）。 */
 (function(){
 var NEWS=[
+  {v:"2026-11-24L",date:"11/24",items:[
+    ["🔴","即時股價","Live prices","開盤時間打開 App，價格會直接從報價服務拿，大約只延遲 5～20 秒，每 15 秒自動更新。大盤、排行、自選股、個股頁都會跟著跳動，漲了閃紅、跌了閃綠。","During market hours prices now come straight from a live quote service (about 5–20 s delay) and refresh every 15 s."],
+    ["🌙","美股也有","US stocks too","台灣晚上美股開盤時，美股列表和個股頁也會顯示即時價格。","US lists and pages go live during US trading hours."]]},
   {v:"2026-11-24n",date:"11/24",items:[
     ["🔬","預測模型重新做、誠實考試","Rebuilt and honestly tested","新模型看 18 個訊號（漲跌、均線、RSI、波動、成交量、K 線形狀、法人），每天收盤後在 GitHub 用台股 1 年、美股 2 年的資料重新訓練，再用它沒看過的日子考試。","The new model uses 18 signals and is retrained daily on 1 year (Taiwan) / 2 years (US) of data, then tested on days it never saw."],
     ["⚖️","考試結果：猜不出來","Result: no better than guessing","不管猜 1 週還是 1 個月、猜漲跌還是猜比大盤強弱，成績都在 5 成左右，跟亂猜一樣。所以現在預測會直接寫「猜不出來」，不會假裝很準。K 線、價格範圍和各方法的說明還是可以參考。","Across 1-week and 1-month horizons it scores about 50%, like guessing, so the app now says so plainly instead of pretending."]]},
