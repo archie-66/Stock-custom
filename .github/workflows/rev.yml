@@ -15,8 +15,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: 補 20 個月的月營收
-        run: MONTHS=20 python -u revenue.py
       - uses: actions/cache/restore@v4
         with:
           path: train-tw.json
@@ -27,6 +25,8 @@ jobs:
           path: news-sent.json
           key: news-sent-${{ github.run_id }}
           restore-keys: news-sent-
+      - name: 抓月營收（Yahoo 股市）
+        run: python -u revenue.py
       - name: 重新訓練台股模型（有營收、沒營收都考試）
         run: |
           pip install -q numpy pandas scikit-learn

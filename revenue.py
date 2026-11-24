@@ -27,7 +27,7 @@ HOSTS = ["https://mopsov.twse.com.tw", "https://mops.twse.com.tw"]
 def fetch(url):
     for k in range(2):
         try:
-            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=20) as r:
+            with urllib.request.urlopen(urllib.request.Request(url, headers=UA), timeout=15) as r:
                 b = r.read()
             for enc in ("big5", "cp950", "utf-8"):
                 try:
@@ -75,29 +75,54 @@ def month(y, m, kind):
     return {}
 
 
+def yahoo(code, sfx):
+    t = fetch(f"https://tw.stock.yahoo.com/_td-stock/api/resource/StockServices.revenues;includedFields=all;period=month;symbol={code}.{sfx}")
+    try:
+        L = json.loads(t)["data"]["result"]["revenues"]
+    except Exception:
+        return {}
+    out = {}
+    for r in L:
+        try:
+            mo = r["date"][:7]
+            f = lambda k: float(r[k]) if r.get(k) not in (None, "") else None
+            out[mo] = [round((f("revenue") or 0) / 1000), f("revenueMoM"), f("revenueYoY")]
+        except Exception:
+            pass
+    return out
+
+
+def stocks():
+    for fn in ("train-tw.json", "hist.json"):
+        if os.path.exists(fn):
+            D = json.load(open(fn, encoding="utf-8"))
+            return [(c, "TWO" if e[1] == "o" else "TW") for c, e in D["s"].items() if not c.startswith("0")]
+    return []
+
+
 def main():
+    """用 Yahoo 股市一檔一檔抓（公開資訊觀測站有限制下載速度，太慢）；4 條線同時抓"""
+    from concurrent.futures import ThreadPoolExecutor
     R = {}
     if os.path.exists(FILE):
         try:
             R = json.load(open(FILE, encoding="utf-8"))
         except Exception:
             R = {}
-    today = date.today(); y, m = today.year, today.month
-    todo = []
-    for _ in range(MONTHS):
-        m -= 1
-        if m == 0:
-            y, m = y - 1, 12
-        todo.append((y, m))
-    for y, m in todo:
-        key = f"{y}-{m:02d}"
-        got = {}
-        for kind in ("sii", "otc"):
-            got.update(month(y, m, kind)); time.sleep(2)
-        print(key, len(got), "家", flush=True)
-        if got:
-            R[key] = got
+    L = stocks(); print("要抓", len(L), "家", flush=True)
+    done = 0
+    def job(x):
+        time.sleep(0.15)
+        return x[0], yahoo(*x)
+    with ThreadPoolExecutor(4) as ex:
+        for code, got in ex.map(job, L):
+            for mo, v in got.items():
+                R.setdefault(mo, {})[code] = v
+            done += 1
+            if done % 200 == 0:
+                print("已抓", done, flush=True)
     R = dict(sorted(R.items())[-26:])
+    print("月份：", {k: len(v) for k, v in R.items()}, flush=True)
     json.dump(R, open(FILE, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 
 
