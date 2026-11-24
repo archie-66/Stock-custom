@@ -61,7 +61,7 @@ function newsHTML(k){
   if(!NW)return `<p class="sub">${tt("新聞讀取中…","Loading news…")}</p>`;
   const L=(NW.n||{})[k]||[];
   if(!L.length)return `<p class="sub">${tt("近三天沒有找到相關新聞。","No news found in the last 3 days.")}</p>`;
-  return `<div class="usnews">${L.map(x=>`<a href="${esc(x.u)}" target="_blank" rel="noopener"><b>${esc(x.t)}</b><span class="sub">${esc(x.s||"")}${x.s?" · ":""}${ago(x.d)}</span></a>`).join("")}</div>
+  return `${window.toneSum?toneSum(L):""}<div class="usnews">${L.map(x=>`<a href="${esc(x.u)}" target="_blank" rel="noopener"><b>${window.toneTag?toneTag(x.t):""}${esc(x.t)}</b><span class="sub">${esc(x.s||"")}${x.s?" · ":""}${ago(x.d)}</span></a>`).join("")}</div>
     <p class="sub" style="margin:6px 0 0">${tt("點標題會打開原始新聞網站。新聞只列標題，內容以原網站為準。","Tap a headline to open the original site.")}</p>`;
 }
 function renderSel(){

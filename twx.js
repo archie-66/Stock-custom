@@ -98,7 +98,7 @@ function body(c){
     ${A?`<div class="usan">${A.map(x=>`<div><span>${x[0]}</span><p>${x[1]}</p></div>`).join("")}</div><p class="sub" style="margin:4px 0 0">${tt("用最近 60 天股價自動整理的重點，不是買賣建議。","Auto-generated from 60 days of prices. Not advice.")}</p>`
       :`<p class="sub">${H?tt("這檔成交量比較小，沒有收錄歷史資料，所以沒辦法分析。","Not enough history for this stock."):tt("讀取中…","Loading…")}</p>`}
     <h3 class="ush">📰 ${tt("近三天新聞","News, last 3 days")}</h3>
-    ${L==null?`<p class="sub">${tt("讀取中…","Loading…")}</p>`:L.length?`<div class="usnews">${L.map(x=>`<a href="${esc(x.u)}" target="_blank" rel="noopener"><b>${esc(x.t)}</b><span class="sub">${esc(x.s||"")}${x.s?" · ":""}${ago(x.d)}</span></a>`).join("")}</div><p class="sub" style="margin:6px 0 0">${tt("點標題會打開原始新聞網站。","Tap a headline to open the original site.")}</p>`
+    ${L==null?`<p class="sub">${tt("讀取中…","Loading…")}</p>`:L.length?`${window.toneSum?toneSum(L):""}<div class="usnews">${L.map(x=>`<a href="${esc(x.u)}" target="_blank" rel="noopener"><b>${window.toneTag?toneTag(x.t):""}${esc(x.t)}</b><span class="sub">${esc(x.s||"")}${x.s?" · ":""}${ago(x.d)}</span></a>`).join("")}</div><p class="sub" style="margin:6px 0 0">${tt("點標題會打開原始新聞網站。","Tap a headline to open the original site.")}</p>`
       :`<p class="sub">${tt("近三天沒有找到這檔的新聞。新聞主要涵蓋成交金額比較大的熱門股。","No news in the last 3 days. News mostly covers actively traded stocks.")}</p>`}
     <div class="usbtns"><button class="btn" id="twPred">🔮 ${tt("看預測分析","Prediction")}</button></div>`;
 }
