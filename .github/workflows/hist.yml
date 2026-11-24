@@ -33,6 +33,20 @@ jobs:
         with:
           path: train-tw.json
           key: train-tw-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: 拿出新聞情緒資料（存在 GitHub 快取）
+        uses: actions/cache/restore@v4
+        with:
+          path: news-sent.json
+          key: news-sent-${{ github.run_id }}
+          restore-keys: news-sent-
+      - name: 更新新聞情緒（最近 4 天）
+        run: DAYS=4 python news_hist.py || echo "新聞情緒更新失敗"
+      - name: 存回新聞快取
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: news-sent.json
+          key: news-sent-${{ github.run_id }}-${{ github.run_attempt }}
       - name: 訓練預測模型
         run: |
           pip install -q numpy pandas scikit-learn

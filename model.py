@@ -25,7 +25,9 @@ from sklearn.linear_model import LogisticRegression
 
 H = 5
 HS = (5, 20)  # 試兩種：5 個交易日（大約 1 週）、20 個交易日（大約 1 個月），選考得比較好的
-FEATS = ["r1", "r5", "r10", "r20", "r60", "g5", "g20", "slope", "rsi", "vol", "vr", "vr5", "pos", "body", "ush", "lsh", "inst", "dhi"]
+NEWS_F = ["nn3", "ns3", "ns1"]
+BASE_F = ["r1", "r5", "r10", "r20", "r60", "g5", "g20", "slope", "rsi", "vol", "vr", "vr5", "pos", "body", "ush", "lsh", "inst", "dhi"]
+FEATS = BASE_F + NEWS_F
 # 用簡單的話說明每個數字（給手機畫面顯示「主要根據」）
 WHY = {
     "r1": ("今天漲比較多", "今天跌比較多"), "r5": ("近 5 天漲比較多", "近 5 天跌比較多"),
@@ -37,7 +39,29 @@ WHY = {
     "pos": ("接近一個月的最高價", "接近一個月的最低價"), "body": ("今天收紅 K（收盤比開盤高）", "今天收黑 K（收盤比開盤低）"),
     "ush": ("上影線長（上面有賣壓）", "沒有上影線"), "lsh": ("下影線長（下面有買盤）", "沒有下影線"),
     "inst": ("外資投信在買", "外資投信在賣"), "dhi": ("離一個月高點近", "離一個月高點遠"),
+    "nn3": ("最近新聞很多", "最近幾乎沒新聞"), "ns3": ("近 3 天新聞偏好消息", "近 3 天新聞偏壞消息"), "ns1": ("今天新聞偏好消息", "今天新聞偏壞消息"),
 }
+
+
+def news_arrays(D, mk):
+    """把 news-sent.json 對到交易日：每檔股票每個交易日的 [新聞數, 好壞分數]"""
+    import bisect, os
+    out = {}
+    if not os.path.exists("news-sent.json"):
+        return out, None
+    NS = json.load(open("news-sent.json", encoding="utf-8")).get(mk, {})
+    dates = D["dates"]; n = len(dates)
+    for d, day in NS.items():
+        i = bisect.bisect_left(dates, d)
+        if i >= n:
+            continue
+        for c, (cnt, sc) in day.items():
+            a = out.get(c)
+            if a is None:
+                a = out[c] = np.zeros((2, n))
+            a[0, i] += cnt; a[1, i] += sc
+    first = min(NS) if NS else None
+    return out, (bisect.bisect_left(dates, first) if first else None)
 TW = timezone(timedelta(hours=8))
 
 
@@ -51,7 +75,7 @@ def mk_of(code):
     return "tw" if code[:1].isdigit() else "us"
 
 
-def features(D):
+def features(D, NA=None):
     """回傳 DataFrame：每一列是 (日期索引 t, 代號, 18 個數字, 5 天後漲跌幅)"""
     n = len(D["dates"]); out = []
     skip = set(D.get("etf", []))
@@ -81,6 +105,12 @@ def features(D):
         })
         for hz in HS:
             x[f"fut{hz}"] = C.shift(-hz) / C - 1
+        a = (NA or {}).get(code)
+        if a is None:
+            a = np.zeros((2, n))
+        cnt, sc = pd.Series(a[0]), pd.Series(a[1])
+        x["nn3"] = np.log1p(cnt.rolling(3, min_periods=1).sum())
+        x["ns3"] = sc.rolling(3, min_periods=1).sum(); x["ns1"] = sc
         x["t"] = np.arange(n); x["code"] = code
         x = x[np.isfinite(s["c"].values) & np.isfinite(x["r20"].values)]
         x = x[x["t"] >= 25]
@@ -101,41 +131,51 @@ def make(kind):
 
 
 def run(D, mk):
-    X = features(D)
-    R = ranked(X).values
+    NA, nfirst = news_arrays(D, mk)
+    X = features(D, NA)
+    R_all = ranked(X); nd = len(D["dates"])
+    if nfirst is not None:
+        print(mk, "新聞資料從第", nfirst, "個交易日開始，共", len(NA), "檔有新聞")
     T = X["t"].values; nd = len(D["dates"]); last = int(T.max())
     res = {}
-    for H in HS:
-        fut = X[f"fut{H}"]
-        med = fut.groupby(X["t"]).transform("median")
-        lab = np.isfinite(fut.values)
-        Y = (fut.values > med.values).astype(int)
-        start = max(40, int(nd * 0.5)); step = max(H, (last - H - start) // 12 // H * H or H)
-        folds = list(range(start, last - H + 1, step))
-        for kind in ("logit", "gbm"):
-            hit = tot = 0; per = []; chit = ctot = 0
-            for k in folds:
-                tr = lab & (T < k - H); te = lab & (T >= k) & (T < k + min(H, step))
-                if tr.sum() < 2000 or te.sum() < 100:
-                    continue
-                m = make(kind).fit(R[tr], Y[tr]); p = m.predict_proba(R[te])[:, 1]
-                ok = (p > 0.5) == (Y[te] == 1); hit += ok.sum(); tot += len(ok); per.append(round(float(ok.mean()), 3))
-                cf = np.abs(p - 0.5) >= 0.05; chit += ok[cf].sum(); ctot += cf.sum()
-            res[(H, kind)] = {"acc": float(hit / tot) if tot else None, "n": int(tot), "folds": per,
-                              "cAcc": float(chit / ctot) if ctot else None, "cN": int(ctot), "lab": lab, "Y": Y}
-            print(mk, H, kind, {k: v for k, v in res[(H, kind)].items() if k not in ("lab", "Y")})
+    sets = {"base": BASE_F}
+    if NA:
+        sets["news"] = FEATS
+    for fs_name, fs in sets.items():
+      R = R_all[fs].values
+      for H in HS:
+          fut = X[f"fut{H}"]
+          med = fut.groupby(X["t"]).transform("median")
+          lab = np.isfinite(fut.values)
+          Y = (fut.values > med.values).astype(int)
+          start = max(40, int(nd * 0.5)); step = max(H, (last - H - start) // 12 // H * H or H)
+          folds = list(range(start, last - H + 1, step))
+          for kind in ("logit", "gbm"):
+              hit = tot = 0; per = []; chit = ctot = 0
+              for k in folds:
+                  tr = lab & (T < k - H); te = lab & (T >= k) & (T < k + min(H, step))
+                  if tr.sum() < 2000 or te.sum() < 100:
+                      continue
+                  m = make(kind).fit(R[tr], Y[tr]); p = m.predict_proba(R[te])[:, 1]
+                  ok = (p > 0.5) == (Y[te] == 1); hit += ok.sum(); tot += len(ok); per.append(round(float(ok.mean()), 3))
+                  cf = np.abs(p - 0.5) >= 0.05; chit += ok[cf].sum(); ctot += cf.sum()
+              res[(fs_name, H, kind)] = {"acc": float(hit / tot) if tot else None, "n": int(tot), "folds": per,
+                                "cAcc": float(chit / ctot) if ctot else None, "cN": int(ctot), "lab": lab, "Y": Y}
+              print(mk, fs_name, H, kind, {k: v for k, v in res[(fs_name, H, kind)].items() if k not in ("lab", "Y")})
     ok_ = {k: v for k, v in res.items() if v["acc"] is not None and v["n"] >= 2000}
     # 選考最好的；線性模型比較好解釋，除非另一個明顯比較準（多 2% 以上）
-    bestk = max(ok_, key=lambda k: ok_[k]["acc"] + (0.02 if k[1] == "logit" else 0)) if ok_ else (5, "logit")
-    H, best = bestk; lab, Y = res[bestk]["lab"], res[bestk]["Y"]
+    bestk = max(ok_, key=lambda k: ok_[k]["acc"] + (0.02 if k[2] == "logit" else 0)) if ok_ else ("base", 5, "logit")
+    fs_name, H, best = bestk; lab, Y = res[bestk]["lab"], res[bestk]["Y"]
+    allres = {f"{a}-{b}-{c}": round(v["acc"], 4) for (a, b, c), v in ok_.items()}
     res = {best: res[bestk]}
+    use = sets[fs_name]; R = R_all[use].values
     m = make(best).fit(R[lab], Y[lab])
     now = (X["t"].values == last)
     P = m.predict_proba(R[now])[:, 1]
     codes = X["code"].values[now]
     out = {"upd": datetime.now(TW).strftime("%Y-%m-%d %H:%M"), "date": D["dates"][last], "model": best,
            "acc": res[best]["acc"], "nTest": res[best]["n"], "folds": res[best]["folds"], "cAcc": res[best]["cAcc"], "cN": res[best]["cN"],
-           "h": H, "p": {}, "why": {}}
+           "h": H, "fs": fs_name, "tests": allres, "p": {}, "why": {}}
     for i, c in enumerate(codes):
         out["p"][c] = round(float(P[i]), 3)
     if best == "logit":  # 每檔股票影響最大的 3 個原因
@@ -143,7 +183,7 @@ def run(D, mk):
         for i, c in enumerate(codes):
             contrib = w * Rn[i]
             top = np.argsort(-np.abs(contrib))[:3]
-            out["why"][c] = [[FEATS[j], 1 if Rn[i][j] > 0 else -1, 1 if contrib[j] > 0 else -1] for j in top if abs(contrib[j]) > 0.01]
+            out["why"][c] = [[use[j], 1 if Rn[i][j] > 0 else -1, 1 if contrib[j] > 0 else -1] for j in top if abs(contrib[j]) > 0.01]
     json.dump(out, open(f"pred-{mk}.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
     print(mk, "用", best, "考試", out["acc"], "共", len(out["p"]), "檔")
     return out

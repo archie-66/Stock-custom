@@ -1,0 +1,45 @@
+name: 補一年的新聞情緒資料
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  news:
+    runs-on: ubuntu-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: 拿出訓練用的長期資料
+        uses: actions/cache/restore@v4
+        with:
+          path: train-tw.json
+          key: train-tw-${{ github.run_id }}
+          restore-keys: train-tw-
+      - name: 補一年多的新聞（台股、美股）
+        run: DAYS=380 python news_hist.py
+      - name: 存到快取
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: news-sent.json
+          key: news-sent-${{ github.run_id }}-${{ github.run_attempt }}
+      - name: 用新聞重新訓練台股模型
+        run: |
+          pip install -q numpy pandas scikit-learn
+          python model.py tw
+          python -c "import json;P=json.load(open('pred-tw.json'));print('考試結果',P['tests'])"
+      - name: 存檔
+        run: |
+          git config user.name "stock-bot"
+          git config user.email "stock-bot@users.noreply.github.com"
+          if [ -n "$(git status --porcelain pred-tw.json)" ]; then
+            git add pred-tw.json
+            git commit -q -m "加入新聞情緒重新訓練台股模型 $(TZ=Asia/Taipei date '+%F %H:%M')"
+            for i in 1 2 3; do git pull -q --rebase -X theirs origin main && git push -q && break; sleep 5; done
+          fi

@@ -23,10 +23,23 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: 拿出新聞情緒資料（存在 GitHub 快取）
+        uses: actions/cache/restore@v4
+        with:
+          path: news-sent.json
+          key: news-sent-${{ github.run_id }}
+          restore-keys: news-sent-
       - name: 抓美股資料
         run: |
           pip install -q numpy pandas scikit-learn
+          DAYS=4 python news_hist.py || true
           python us.py
+      - name: 存回新聞快取
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: news-sent.json
+          key: news-sent-${{ github.run_id }}-${{ github.run_attempt }}
       - name: 存檔
         run: |
           git config user.name "stock-bot"
