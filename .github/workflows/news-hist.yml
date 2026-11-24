@@ -7,24 +7,61 @@ permissions:
   contents: write
 
 jobs:
-  news:
+  part:
     runs-on: ubuntu-latest
-    timeout-minutes: 150
+    timeout-minutes: 80
+    strategy:
+      fail-fast: false
+      matrix:
+        p: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: 拿出訓練用的長期資料
+      - name: 拿出訓練用的長期資料（要用裡面的公司名稱）
         uses: actions/cache/restore@v4
         with:
           path: train-tw.json
           key: train-tw-${{ github.run_id }}
           restore-keys: train-tw-
-      - name: 補一年多的新聞（台股、美股）
-        run: DAYS=380 python news_hist.py
+      - name: 抓這一段（每段 48 天）
+        run: FROM=$(( ${{ matrix.p }} * 48 )) DAYS=48 PART=${{ matrix.p }} python news_hist.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: news-part-${{ matrix.p }}
+          path: news-part-${{ matrix.p }}.json
+
+  merge:
+    needs: part
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: news-part-*
+          merge-multiple: true
+      - name: 拿出快取
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            train-tw.json
+          key: train-tw-${{ github.run_id }}
+          restore-keys: train-tw-
+      - name: 拿出新聞快取
+        uses: actions/cache/restore@v4
+        with:
+          path: news-sent.json
+          key: news-sent-${{ github.run_id }}
+          restore-keys: news-sent-
+      - name: 合併
+        run: python news_hist.py merge news-part-*.json
       - name: 存到快取
-        if: always()
         uses: actions/cache/save@v4
         with:
           path: news-sent.json

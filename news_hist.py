@@ -23,6 +23,8 @@ from datetime import datetime, timedelta, timezone
 
 FILE = "news-sent.json"
 DAYS = int(os.environ.get("DAYS", "4"))
+FROM = int(os.environ.get("FROM", "0"))      # 分段補：從幾天前開始（0 = 現在）
+PART = os.environ.get("PART")                # 分段時只寫到 news-part-<PART>.json，最後再合併
 KEEP = 400
 UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/124 Safari/537.36"}
 
@@ -131,6 +133,7 @@ def crawl(mk, cats, names, out, start, end):
                 page += 1; time.sleep(.25)
             t0 = t1
             time.sleep(.3)
+        print(mk, cat, "完成", got, "篇", flush=True)
     print(mk, "對到股票的新聞", got, "篇")
 
 
@@ -141,8 +144,16 @@ def main():
             old = json.load(open(FILE, encoding="utf-8"))
         except Exception:
             old = {}
-    now = int(time.time()); start = now - DAYS * 86400
-    for mk, cats, names in (("tw", ["tw_stock", "tw_quo"], names_tw()), ("us", ["wd_stock", "us_stock"], names_us())):
+    now = int(time.time()) - FROM * 86400; start = now - DAYS * 86400
+    big = DAYS > 10  # 補很多天時跳過「台股盤勢」分類（量太大、大多是行情快訊）
+    if PART:
+        part = {}
+        for mk, cats, names in (("tw", ["tw_stock"] if big else ["tw_stock", "tw_quo"], names_tw()), ("us", ["wd_stock", "us_stock"], names_us())):
+            if names:
+                part[mk] = {}; crawl(mk, cats, names, part[mk], start, now)
+        json.dump(part, open(f"news-part-{PART}.json", "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+        return
+    for mk, cats, names in (("tw", ["tw_stock"] if big else ["tw_stock", "tw_quo"], names_tw()), ("us", ["wd_stock", "us_stock"], names_us())):
         if not names:
             continue
         fresh = {}
@@ -162,5 +173,36 @@ def main():
     json.dump(old, open(FILE, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
 
 
+def merge(files):
+    """把分段抓的檔案合起來（分段的邊界那天，兩段的數字相加）"""
+    out = {}
+    if os.path.exists(FILE):
+        try:
+            out = json.load(open(FILE, encoding="utf-8"))
+        except Exception:
+            out = {}
+    add = {}
+    for f in files:
+        P = json.load(open(f, encoding="utf-8"))
+        for mk, days in P.items():
+            for d, day in days.items():
+                tgt = add.setdefault(mk, {}).setdefault(d, {})
+                for c, (n, sc) in day.items():
+                    v = tgt.setdefault(c, [0, 0]); v[0] += n; v[1] += sc
+    for mk, days in add.items():
+        cur = out.setdefault(mk, {})
+        for d, day in days.items():
+            if d not in cur or len(day) >= len(cur[d]):
+                cur[d] = day
+        out[mk] = dict(sorted(cur.items())[-KEEP:])
+        print(mk, "合併後共", len(out[mk]), "天")
+    out["upd"] = datetime.now(timezone(timedelta(hours=8))).strftime("%Y-%m-%d %H:%M")
+    json.dump(out, open(FILE, "w", encoding="utf-8"), ensure_ascii=False, separators=(",", ":"))
+
+
 if __name__ == "__main__":
-    main()
+    import sys
+    if len(sys.argv) > 1 and sys.argv[1] == "merge":
+        merge(sys.argv[2:])
+    else:
+        main()
